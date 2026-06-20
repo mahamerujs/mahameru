@@ -21,7 +21,7 @@ export default function createHttpServer(app: Express, existingHttpServer?: Serv
             const address = httpServer.address()
 
             if (address && typeof address !== 'string') {
-                console.log('HTTP Server', `Listening on http://${HOST} ${PORT} ${address.family}`)
+                console.log('HTTP Server', `Listening on http://${HOST}:${PORT} ${address.family}`)
             } else {
                 console.log('HTTP Server', `Listening on ${address}`)
             }
