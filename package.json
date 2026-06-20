@@ -1,0 +1,71 @@
+{
+  "name": "mahameru",
+  "version": "0.0.0",
+  "description": "",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": "./dist/cli/index.js",
+  "scripts": {
+    "build": "tsup --config tsup.config.ts && npm pack",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "prepare": "npm run typecheck && npm run build"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./database": {
+      "types": "./dist/database/index.d.ts",
+      "import": "./dist/database/index.js",
+      "require": "./dist/database/index.cjs"
+    },
+    "./database/column": {
+      "types": "./dist/database/column/index.d.ts",
+      "import": "./dist/database/column/index.js",
+      "require": "./dist/database/column/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "author": "Bintan <hello@bintvn.co>",
+  "license": "ISC",
+  "type": "module",
+  "peerDependencies": {
+    "@types/node": "^26.0.0",
+    "tsc-alias": "^1.8.17",
+    "tsx": "^4.22.4",
+    "typeorm": "^1.0.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "degit": "^3.4.7",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "inquirer": "^14.0.2",
+    "lite-env": "^1.1.0",
+    "ora": "^9.4.0",
+    "picocolors": "^1.1.1",
+    "typeorm-dto-generator": "^1.0.6"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.41",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/helmet": "^0.0.48",
+    "@types/node": "^26.0.0",
+    "tsc-alias": "^1.8.17",
+    "tsup": "^8.5.1",
+    "tsx": "^4.22.4",
+    "typeorm": "^1.0.0",
+    "typescript": "^6.0.3"
+  }
+}
