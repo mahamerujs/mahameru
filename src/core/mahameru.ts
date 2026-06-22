@@ -1,6 +1,6 @@
 import { join, relative, resolve } from 'path';
 import { createServer, IncomingMessage } from 'http';
-import { MahameruRequest, type MahameruResponse } from './index.js';
+import { MahameruRequest, MahameruResponse } from './index.js';
 import { MahameruHttpServerError } from './mahameru-http-server-error.js';
 import { MahameruContainer } from './index.js';
 import { existsSync, readdirSync } from 'fs';
@@ -38,6 +38,21 @@ export type RouteHandler = (
     context: { params: Record<string, string> }
 ) => Promise<MahameruResponse> | MahameruResponse;
 
+export interface MahameruMiddlewareContext {
+    request: MahameruRequest;
+    container: MahameruContainer;
+    params: Record<string, string>;
+    path: string;
+    method: string;
+}
+
+export type MahameruNext = () => Promise<MahameruResponse>;
+
+export type MahameruMiddleware = (
+    context: MahameruMiddlewareContext,
+    next: MahameruNext
+) => Promise<MahameruResponse> | MahameruResponse;
+
 export const mahameruDefaultConfig: MahameruConfig = {
     trailingSlash: false,
     dev: false,
@@ -49,6 +64,7 @@ export const mahameruDefaultConfig: MahameruConfig = {
 export class Mahameru {
     protected options: MahameruExtendedConfig;
     protected routeRegistry: RouteItem[] = [];
+    protected middleware?: MahameruMiddleware;
 
     constructor(
         options: Partial<MahameruConfig> = {},
@@ -62,6 +78,7 @@ export class Mahameru {
 
         await this.container.autoDiscover(join(appPath, 'modules'));
         await this.scanRoutes(join(appPath, 'routes'));
+        await this.loadMiddleware(appPath);
 
         return new Promise((resolve, reject) => {
             this.createHttpServer()
@@ -151,11 +168,24 @@ export class Mahameru {
                         params[name] = matchResult![index + 1];
                     });
 
-                const mahameruResponse: MahameruResponse = await handler(
-                    new MahameruRequest(request),
-                    this.container,
-                    { params }
-                );
+                const mahameruRequest = new MahameruRequest(request);
+                const mahameruResponse: MahameruResponse = this.middleware
+                    ? await this.runMiddlewarePipeline(
+                        this.middleware,
+                        {
+                            request: mahameruRequest,
+                            container: this.container,
+                            params,
+                            path: reqUrl,
+                            method
+                        },
+                        () => handler(mahameruRequest, this.container, { params })
+                    )
+                    : await handler(
+                        mahameruRequest,
+                        this.container,
+                        { params }
+                    );
 
                 const finalHeaders = new Headers();
 
@@ -229,6 +259,58 @@ export class Mahameru {
                 });
             }
         }
+    }
+
+    protected async loadMiddleware(appPath: string) {
+        const middlewarePaths = [
+            join(appPath, 'middleware.ts'),
+            join(appPath, 'middleware.js')
+        ];
+
+        const middlewarePath = middlewarePaths.find(existsSync);
+
+        if (!middlewarePath) {
+            this.middleware = undefined;
+            return;
+        }
+
+        const fileUrl = pathToFileURL(resolve(middlewarePath)).href;
+        const middlewareModule = await import(/* webpackIgnore: true */ fileUrl);
+        const middleware = middlewareModule.default;
+
+        if (typeof middleware !== 'function') {
+            throw new MahameruHttpServerError(
+                `Global middleware at '${middlewarePath}' must export a default function.`
+            );
+        }
+
+        this.middleware = middleware as MahameruMiddleware;
+    }
+
+    protected async runMiddlewarePipeline(
+        middleware: MahameruMiddleware,
+        context: MahameruMiddlewareContext,
+        handler: () => Promise<MahameruResponse> | MahameruResponse
+    ) {
+        const response = await middleware(context, async () => {
+            const nextResponse = await handler();
+
+            if (!(nextResponse instanceof MahameruResponse)) {
+                throw new MahameruHttpServerError(
+                    'Route handlers and next() must resolve to MahameruResponse.'
+                );
+            }
+
+            return nextResponse;
+        });
+
+        if (!(response instanceof MahameruResponse)) {
+            throw new MahameruHttpServerError(
+                'Global middleware must return a MahameruResponse instance.'
+            );
+        }
+
+        return response;
     }
 
     protected buildConfig(options: Partial<MahameruConfig>): MahameruExtendedConfig {
