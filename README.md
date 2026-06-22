@@ -31,7 +31,7 @@ That's it!
 
 ## Global middleware
 
-Mahameru supports a convention-based global middleware file in your consumer app:
+Mahameru supports a convention-based global middleware:
 
 - `src/middleware.ts`
 - fallback `src/middleware.js`
@@ -41,9 +41,9 @@ The file must export a default middleware function with the signature below:
 ```ts
 import { type MahameruMiddleware } from 'mahameru/core';
 
-const middleware: MahameruMiddleware = async (context, next) => {
+async function middleware(context: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
     return next();
-};
+}
 
 export default middleware;
 ```
@@ -51,13 +51,15 @@ export default middleware;
 Example with route-specific conditions:
 
 ```ts
-import { MahameruResponse, type MahameruMiddleware } from 'mahameru/core';
+import { type MahameruMiddlewareContext, type MahameruNext, MahameruResponse } from 'mahameru/core';
 
-const middleware: MahameruMiddleware = async ({ path, method, request }, next) => {
+async function middleware({ path, method, request }: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
+    const { query } = request
+
     if (path.startsWith('/user') && method === 'GET') {
-        const apiKey = request.headers['x-api-key'];
+        const secret = '1234'
 
-        if (apiKey !== 'secret-key') {
+        if (query.get('secret') !== secret) {
             return MahameruResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
@@ -67,8 +69,8 @@ const middleware: MahameruMiddleware = async ({ path, method, request }, next) =
 
     if (path === '/' && method === 'GET') {
         return MahameruResponse.json({
-            framework: 'Custom Node Backend Framework',
-            status: 'Intercepted by middleware'
+            success: true,
+            message: 'Intercepted by middleware'
         });
     }
 
