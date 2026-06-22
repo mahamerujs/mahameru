@@ -1,15 +1,4 @@
-import MahameruError from './error.js'
-import createHttpServer from './http.js'
-import { type MahameruConfig } from './mahameru.js'
-import { MahameruRequest } from './request.js'
-import { MahameruResponse } from './response.js'
-import mahameru from './client.js'
+import { Mahameru, MahameruContainer, type MahameruConfig } from "./core/index.js";
 
-export * from './api.error.js'
-export * from './base-class/index.js'
-
-export type { MahameruConfig }
-export { createHttpServer }
-export { MahameruError, MahameruRequest, MahameruResponse }
-
-export default mahameru
+export default async (options?: Partial<MahameruConfig>) =>
+    new Mahameru(options, new MahameruContainer())
