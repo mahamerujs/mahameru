@@ -22,7 +22,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "clean": "rimraf dist .types",
-    "build": "npm run clean && webpack && tsc --project tsconfig.types-root.json && node -e \"require('fs').copyFileSync('.types/index.d.ts', 'dist/index.d.ts')\" && dts-bundle-generator --config dts-bundle.config.json && rimraf .types"
+    "build": "npm run clean && webpack && tsc --project tsconfig.types-root.json && node -e \"require('fs').copyFileSync('.types/index.d.ts', 'dist/index.d.ts')\" && dts-bundle-generator --config dts-bundle.config.json && rimraf .types",
+    "prepare": "npm run build"
   },
   "keywords": [
     "mahamerujs",
