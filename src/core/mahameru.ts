@@ -53,6 +53,12 @@ export type MahameruMiddleware = (
     next: MahameruNext
 ) => Promise<MahameruResponse> | MahameruResponse;
 
+interface MahameruResponseLike {
+    body: any;
+    status: number;
+    headers?: Headers | Record<string, string>;
+}
+
 export const mahameruDefaultConfig: MahameruConfig = {
     trailingSlash: false,
     dev: false,
@@ -207,9 +213,13 @@ export class Mahameru {
                 response.writeHead(mahameruResponse.status);
                 response.end(JSON.stringify(mahameruResponse.body));
             } catch (error: any) {
-                console.error(error);
-                response.writeHead(500, { 'Content-Type': 'application/json' });
-                response.end(JSON.stringify({ error: error.message || 'Internal Server Error' }));
+                const serverError = error instanceof MahameruHttpServerError
+                    ? error
+                    : new MahameruHttpServerError(error instanceof Error ? error.message : undefined);
+
+                console.error(serverError.details ?? error);
+                response.writeHead(serverError.statusCode, { 'Content-Type': 'application/json' });
+                response.end(JSON.stringify({ error: serverError.message }));
             }
         });
 
@@ -294,23 +304,59 @@ export class Mahameru {
     ) {
         const response = await middleware(context, async () => {
             const nextResponse = await handler();
-
-            if (!(nextResponse instanceof MahameruResponse)) {
-                throw new MahameruHttpServerError(
-                    'Route handlers and next() must resolve to MahameruResponse.'
-                );
-            }
-
-            return nextResponse;
+            return this.normalizeMahameruResponse(
+                nextResponse,
+                'Route handlers and next() must resolve to MahameruResponse.'
+            );
         });
 
-        if (!(response instanceof MahameruResponse)) {
-            throw new MahameruHttpServerError(
-                'Global middleware must return a MahameruResponse instance.'
-            );
+        return this.normalizeMahameruResponse(
+            response,
+            'Global middleware must return a MahameruResponse instance.'
+        );
+    }
+
+    protected isMahameruResponseLike(value: unknown): value is MahameruResponseLike {
+        if (!value || typeof value !== 'object') {
+            return false;
         }
 
-        return response;
+        if (!('status' in value) || typeof value.status !== 'number') {
+            return false;
+        }
+
+        if (!('body' in value)) {
+            return false;
+        }
+
+        if (!('headers' in value) || value.headers === undefined) {
+            return true;
+        }
+
+        if (value.headers instanceof Headers) {
+            return true;
+        }
+
+        return typeof value.headers === 'object' && value.headers !== null && !Array.isArray(value.headers);
+    }
+
+    protected normalizeMahameruResponse(value: unknown, errorMessage: string): MahameruResponse {
+        if (value instanceof MahameruResponse) {
+            return value;
+        }
+
+        if (!this.isMahameruResponseLike(value)) {
+            throw new MahameruHttpServerError(errorMessage);
+        }
+
+        const normalizedHeaders = value.headers instanceof Headers
+            ? Object.fromEntries(value.headers.entries())
+            : value.headers;
+
+        return new MahameruResponse(value.body, {
+            status: value.status,
+            headers: normalizedHeaders
+        });
     }
 
     protected buildConfig(options: Partial<MahameruConfig>): MahameruExtendedConfig {
