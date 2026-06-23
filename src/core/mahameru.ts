@@ -7,20 +7,65 @@ import { existsSync, readdirSync } from 'fs';
 import { pathToFileURL } from 'url';
 
 export interface MahameruBaseConfig {
-    rootPath: string;
-    appPath: string;
-    modulesPath: string;
-    routesPath: string;
     httpServerSignature: string;
 }
 
 export interface MahameruConfig {
+    /**
+     * Enable or disable the development mode.
+     * @type {boolean}
+     * @default false
+     */
     dev: boolean;
+    /**
+     * Server port.
+     * @type {number}
+     * @default 3000
+     */
     port: number;
+    /**
+     * Server host.
+     * @type {string}
+     * @default 'localhost'
+     */
     host: string;
+    /**
+     * Enable or disable the trailing slash.
+     * @type {boolean}
+     * @default false
+     */
     trailingSlash: boolean;
+    /**
+     * Allowed origins for CORS. Set to `undefined` to disable CORS.
+     * @type {string[] | undefined}
+     * @default undefined
+     */
     allowedOrigins?: string[];
+    /**
+     * Disable the HTTP signature response header.
+     * X-Powered-By: MahameruJS
+     * @type {boolean}
+     * @default false
+     */
     disableHttpSignatureResponse?: boolean;
+    /**
+     * Relative path to the application.
+     * @type {string}
+     * @default process.cwd()
+     */
+    appPath: string;
+    /**
+     * Relative path to the modules directory.
+     * @type {string}
+     * @default path.join(process.cwd(), 'src', 'modules')
+     */
+    modulesPath: string;
+    /**
+     * Relative path to the routes directory.
+     * @type {string}
+     * @default path.join(process.cwd(), 'src', 'routes')
+     */
+    routesPath: string;
 }
 
 export type MahameruExtendedConfig = MahameruBaseConfig & MahameruConfig;
@@ -71,11 +116,15 @@ interface MahameruResponseLike {
 }
 
 export const mahameruDefaultConfig: MahameruConfig = {
+    appPath: join(process.cwd(), 'src'),
     trailingSlash: false,
     dev: false,
     port: 3000,
     host: 'localhost',
-    allowedOrigins: undefined
+    allowedOrigins: undefined,
+    modulesPath: join(process.cwd(), 'src', 'modules'),
+    routesPath: join(process.cwd(), 'src', 'routes'),
+    disableHttpSignatureResponse: false
 };
 
 export class Mahameru {
@@ -93,13 +142,11 @@ export class Mahameru {
     }
 
     async initialize(): Promise<boolean> {
-        const appPath = this.options.appPath;
-
-        await this.container.autoDiscover(join(appPath, 'modules'));
-        await this.scanRoutes(join(appPath, 'routes'));
-        await this.loadMiddleware(appPath);
-        await this.loadErrorHandler(appPath);
-        await this.loadNotFoundHandler(appPath);
+        await this.container.autoDiscover(this.options.modulesPath);
+        await this.scanRoutes(this.options.routesPath);
+        await this.loadMiddleware(this.options.appPath);
+        await this.loadErrorHandler(this.options.appPath);
+        await this.loadNotFoundHandler(this.options.appPath);
 
         return new Promise((resolve, reject) => {
             this.createHttpServer()
@@ -520,15 +567,8 @@ export class Mahameru {
     }
 
     protected buildConfig(options: Partial<MahameruConfig>): MahameruExtendedConfig {
-        const rootPath = process.cwd();
-        const appPath = join(rootPath, 'src');
-
         const mahameruBaseOptions: MahameruBaseConfig = {
-            httpServerSignature: 'MahameruJS',
-            rootPath,
-            appPath,
-            modulesPath: join(appPath, 'modules'),
-            routesPath: join(appPath, 'routes'),
+            httpServerSignature: 'MahameruJS'
         };
 
         return {
