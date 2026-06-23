@@ -52,41 +52,22 @@ Example with route-specific conditions:
 
 ```ts
 import { type MahameruMiddlewareContext, type MahameruNext, MahameruResponse } from 'mahameru/core';
+import { authValidation } from './helpers/auth-middleware.js';
 
-async function middleware({ path, method, request }: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
-    const { query } = request
+const protectedRoutes = ['/user'];
 
-    if (path.startsWith('/user') && method === 'GET') {
-        const secret = '1234'
+export default async function middleware({ request, path, container, params }: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
+    try {
+        if (protectedRoutes.some(route => path.startsWith(route)))
+            await authValidation(request, path, container, params, protectedRoutes);
 
-        if (query.get('secret') !== secret) {
-            return MahameruResponse.json(
-                { success: false, error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+        // Other middleware logic...
+
+        return await next();
+    } catch (error) {
+        throw error
     }
-
-    if (path === '/' && method === 'GET') {
-        return MahameruResponse.json({
-            success: true,
-            message: 'Intercepted by middleware'
-        });
-    }
-
-    const response = await next();
-
-    if (path.startsWith('/user')) {
-        response.headers = {
-            ...response.headers,
-            'X-Protected-Route': 'true'
-        };
-    }
-
-    return response;
 };
-
-export default middleware;
 ```
 
 Because this middleware is global, filtering for specific routes should be done inside the middleware itself with `if` conditions using `path` and `method`.
@@ -101,20 +82,22 @@ Mahameru supports a convention-based global error handler:
 The file must export a default function:
 
 ```ts
-import { MahameruResponse, type MahameruErrorHandlerContext, type MahameruNext } from 'mahameru/core';
+import { MahameruError, MahameruHttpServerError, MahameruResponse, type MahameruErrorHandlerContext } from "mahameru/core";
+import { UnauthorizedError } from "./common/error.js";
 
-export default async function errorHandler(
-    { error }: MahameruErrorHandlerContext,
-    next: MahameruNext
-): Promise<MahameruResponse> {
-    if (error instanceof Error) {
-        return MahameruResponse.json(
-            { success: false, error: error.message },
-            { status: 400 }
-        );
-    }
+export default async function errorHandler({ error }: MahameruErrorHandlerContext) {
+    if (error instanceof UnauthorizedError)
+        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: error.statusCode });
 
-    return next();
+    if (error instanceof Error)
+        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: 400 });
+
+    console.error(error);
+
+    if (error instanceof MahameruHttpServerError || error instanceof MahameruError)
+        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: 500 });
+
+    return MahameruResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
 }
 ```
 
@@ -130,13 +113,12 @@ Mahameru supports a convention-based custom not-found handler:
 This file follows the same route-style method exports as other route files:
 
 ```ts
-import { MahameruResponse } from 'mahameru/core';
+import { MahameruResponse, type MahameruContainer, type MahameruRequest, type RouteHandlerContext } from 'mahameru/core'
 
-export async function GET() {
-    return MahameruResponse.json(
-        { success: false, error: 'Not Found' },
-        { status: 404 }
-    );
+export async function GET(request: MahameruRequest, container: MahameruContainer, context: RouteHandlerContext) {
+    const path = request.url.split('?')[0];
+
+    return MahameruResponse.json({ success: false, error: 'NOT_FOUND', message: 'Route not found', path }, { status: 404 });
 }
 ```
 
