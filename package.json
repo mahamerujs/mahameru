@@ -1,6 +1,6 @@
 {
   "name": "mahameru",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Mahameru is a minimal and fast Node.js framework for building HTTP servers",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
