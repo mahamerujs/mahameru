@@ -30,12 +30,12 @@ export class MahameruContainer {
 
         for (const folder of folders) {
             if (folder.isDirectory()) {
-                const servicePath = path.join(modulesDir, folder.name, `${folder.name}.service.ts`);
+                const servicePath = this.resolveModuleFilePath(modulesDir, folder.name, 'service');
 
-                if (fs.existsSync(servicePath)) {
+                if (servicePath) {
                     const fileUrl = pathToFileURL(path.resolve(servicePath)).href;
                     const module = await import(/* webpackIgnore: true */ fileUrl);
-                    const ServiceClass = Object.values(module)[0] as ClassConstructor;
+                    const ServiceClass = this.getExportedClass(module, servicePath);
 
                     this.register(ServiceClass, new ServiceClass());
                 }
@@ -44,18 +44,18 @@ export class MahameruContainer {
 
         for (const folder of folders) {
             if (folder.isDirectory()) {
-                const controllerPath = path.join(modulesDir, folder.name, `${folder.name}.controller.ts`);
-                const servicePath = path.join(modulesDir, folder.name, `${folder.name}.service.ts`);
+                const controllerPath = this.resolveModuleFilePath(modulesDir, folder.name, 'controller');
+                const servicePath = this.resolveModuleFilePath(modulesDir, folder.name, 'service');
 
-                if (fs.existsSync(controllerPath)) {
+                if (controllerPath) {
                     const controllerUrl = pathToFileURL(path.resolve(controllerPath)).href;
                     const controllerModule = await import(/* webpackIgnore: true */ controllerUrl);
-                    const ControllerClass = Object.values(controllerModule)[0] as ClassConstructor;
+                    const ControllerClass = this.getExportedClass(controllerModule, controllerPath);
 
-                    if (fs.existsSync(servicePath)) {
+                    if (servicePath) {
                         const serviceUrl = pathToFileURL(path.resolve(servicePath)).href;
                         const serviceModule = await import(/* webpackIgnore: true */ serviceUrl);
-                        const ServiceClass = Object.values(serviceModule)[0] as ClassConstructor;
+                        const ServiceClass = this.getExportedClass(serviceModule, servicePath);
                         const injectedService = this.get(ServiceClass);
 
                         this.register(ControllerClass, new ControllerClass(injectedService));
@@ -65,5 +65,29 @@ export class MahameruContainer {
                 }
             }
         }
+    }
+
+    private resolveModuleFilePath(modulesDir: string, folderName: string, moduleType: 'service' | 'controller') {
+        const candidates = [
+            path.join(modulesDir, folderName, `${moduleType}.ts`),
+            path.join(modulesDir, folderName, `${moduleType}.js`)
+        ];
+
+        for (const candidate of candidates) {
+            if (fs.existsSync(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private getExportedClass(module: Record<string, unknown>, filePath: string) {
+        const ExportedClass = Object.values(module)[0];
+
+        if (typeof ExportedClass !== 'function') {
+            throw new MahameruError(`Module '${filePath}' does not export a class that can be registered.`);
+        }
+
+        return ExportedClass as ClassConstructor;
     }
 }

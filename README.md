@@ -29,6 +29,27 @@ and follow the prompts.
 
 That's it!
 
+## Module conventions
+
+Mahameru discovers modules from the directory configured as `modulesPath`, typically:
+
+- `src/modules/<name>/service.ts`
+- `src/modules/<name>/controller.ts`
+
+During production runtime, the same convention is resolved from build output in `dist/` as:
+
+- `dist/modules/<name>/service.js`
+- `dist/modules/<name>/controller.js`
+
+Each module folder may contain:
+
+- `service.ts` for container-registered services
+- `controller.ts` for container-registered controllers
+
+If both files exist, Mahameru registers the service first and injects it into the controller constructor. If only `controller.ts` exists, the controller is still registered without service injection.
+
+> **Breaking change:** The legacy naming convention `<name>.service.ts` and `<name>.controller.ts` is no longer supported.
+
 ## Global middleware
 
 Mahameru supports a convention-based global middleware:
