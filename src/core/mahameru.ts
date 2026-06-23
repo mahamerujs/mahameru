@@ -120,14 +120,15 @@ export class Mahameru {
 
     protected createHttpServer = () =>
         createServer(async (request, response) => {
-            let reqUrl = request.url?.split('?')[0] || '/';
+            const rawReqUrl = request.url?.split('?')[0] || '/';
+            const matchUrl = this.normalizePathForMatching(rawReqUrl);
             const method = request.method || 'GET';
             const mahameruRequest = new MahameruRequest(request);
             const responseHeader = new Headers();
             const requestContext: Omit<MahameruMiddlewareContext, 'params'> & { params?: Record<string, string> } = {
                 request: mahameruRequest,
                 container: this.container,
-                path: reqUrl,
+                path: rawReqUrl,
                 method
             };
 
@@ -148,8 +149,8 @@ export class Mahameru {
                     return response.end(JSON.stringify({ error: 'Forbidden' }));
                 }
 
-                if (this.options.trailingSlash === false && reqUrl.length > 1 && reqUrl.endsWith('/')) {
-                    const cleanUrl = reqUrl.slice(0, -1);
+                if (this.options.trailingSlash === false && rawReqUrl.length > 1 && rawReqUrl.endsWith('/')) {
+                    const cleanUrl = matchUrl;
                     const queryStr = request.url?.split('?')[1];
                     const redirectPath = cleanUrl + (queryStr ? `?${queryStr}` : '');
 
@@ -165,7 +166,7 @@ export class Mahameru {
                 let matchResult = null;
 
                 for (const route of this.routeRegistry) {
-                    const result = route.regex.exec(reqUrl);
+                    const result = route.regex.exec(matchUrl);
 
                     if (result) {
                         matchedRoute = route;
@@ -176,7 +177,7 @@ export class Mahameru {
                 }
 
                 if (!matchedRoute) {
-                    const notFoundResponse = await this.runNotFoundHandler(mahameruRequest, method, reqUrl);
+                    const notFoundResponse = await this.runNotFoundHandler(mahameruRequest, method, matchUrl);
 
                     return this.sendResponse(response, responseHeader, notFoundResponse ?? MahameruResponse.json(
                         { error: 'Not Found' },
@@ -206,7 +207,7 @@ export class Mahameru {
                             request: mahameruRequest,
                             container: this.container,
                             params,
-                            path: reqUrl,
+                            path: rawReqUrl,
                             method
                         },
                         () => handler(mahameruRequest, this.container, { params })
@@ -486,6 +487,14 @@ export class Mahameru {
             { error: serverError.message },
             { status: serverError.statusCode }
         );
+    }
+
+    protected normalizePathForMatching(path: string): string {
+        if (path.length > 1 && path.endsWith('/')) {
+            return path.slice(0, -1);
+        }
+
+        return path;
     }
 
     protected sendResponse(response: any, responseHeader: Headers, mahameruResponse: MahameruResponse) {
