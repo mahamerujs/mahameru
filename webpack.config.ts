@@ -50,6 +50,8 @@ const configBase: webpack.Configuration = {
             new TerserPlugin({
                 extractComments: false,
                 terserOptions: {
+                    keep_classnames: true,
+                    keep_fnames: true,
                     format: {
                         max_line_len: 120,
                         comments: /^!/
