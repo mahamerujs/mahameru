@@ -32,6 +32,8 @@ export interface RouteItem {
     handlers: any;
 }
 
+type RouteHandlerModule = Partial<Record<string, RouteHandler>>;
+
 export type RouteHandler = (
     request: MahameruRequest,
     container: MahameruContainer,
@@ -53,6 +55,13 @@ export type MahameruMiddleware = (
     next: MahameruNext
 ) => Promise<MahameruResponse> | MahameruResponse;
 
+export type MahameruErrorHandlerContext = MahameruMiddlewareContext & { error: unknown };
+
+export type MahameruErrorHandler = (
+    context: MahameruErrorHandlerContext,
+    next: MahameruNext
+) => Promise<MahameruResponse> | MahameruResponse;
+
 interface MahameruResponseLike {
     body: any;
     status: number;
@@ -71,6 +80,8 @@ export class Mahameru {
     protected options: MahameruExtendedConfig;
     protected routeRegistry: RouteItem[] = [];
     protected middleware?: MahameruMiddleware;
+    protected errorHandler?: MahameruErrorHandler;
+    protected notFoundHandler?: RouteHandlerModule;
 
     constructor(
         options: Partial<MahameruConfig> = {},
@@ -85,6 +96,8 @@ export class Mahameru {
         await this.container.autoDiscover(join(appPath, 'modules'));
         await this.scanRoutes(join(appPath, 'routes'));
         await this.loadMiddleware(appPath);
+        await this.loadErrorHandler(appPath);
+        await this.loadNotFoundHandler(appPath);
 
         return new Promise((resolve, reject) => {
             this.createHttpServer()
@@ -105,14 +118,21 @@ export class Mahameru {
 
     protected createHttpServer = () =>
         createServer(async (request, response) => {
+            let reqUrl = request.url?.split('?')[0] || '/';
+            const method = request.method || 'GET';
+            const mahameruRequest = new MahameruRequest(request);
+            const responseHeader = new Headers();
+            const requestContext: Omit<MahameruMiddlewareContext, 'params'> & { params?: Record<string, string> } = {
+                request: mahameruRequest,
+                container: this.container,
+                path: reqUrl,
+                method
+            };
+
             try {
                 this.requestLogger(request);
 
-                let reqUrl = request.url?.split('?')[0] || '/';
-                const method = request.method || 'GET';
                 const origin = request.headers.origin;
-
-                const responseHeader = new Headers();
                 responseHeader.append('Content-Type', 'application/json');
 
                 if (!this.options.disableHttpSignatureResponse) {
@@ -154,9 +174,12 @@ export class Mahameru {
                 }
 
                 if (!matchedRoute) {
-                    response.writeHead(404);
+                    const notFoundResponse = await this.runNotFoundHandler(mahameruRequest, method, reqUrl);
 
-                    return response.end(JSON.stringify({ error: 'Not Found' }));
+                    return this.sendResponse(response, responseHeader, notFoundResponse ?? MahameruResponse.json(
+                        { error: 'Not Found' },
+                        { status: 404 }
+                    ));
                 }
 
                 const handler: RouteHandler = matchedRoute.handlers[method];
@@ -174,7 +197,6 @@ export class Mahameru {
                         params[name] = matchResult![index + 1];
                     });
 
-                const mahameruRequest = new MahameruRequest(request);
                 const mahameruResponse: MahameruResponse = this.middleware
                     ? await this.runMiddlewarePipeline(
                         this.middleware,
@@ -193,33 +215,17 @@ export class Mahameru {
                         { params }
                     );
 
-                const finalHeaders = new Headers();
-
-                responseHeader.forEach((value, key) => {
-                    finalHeaders.append(key, value);
-                });
-
-                if (mahameruResponse.headers instanceof Headers) {
-                    mahameruResponse.headers.forEach((value, key) => {
-                        finalHeaders.set(key, value);
-                    });
-                } else if (mahameruResponse.headers) {
-                    for (const [key, value] of Object.entries(mahameruResponse.headers)) {
-                        finalHeaders.set(key, value as string);
-                    }
-                }
-
-                response.setHeaders(finalHeaders);
-                response.writeHead(mahameruResponse.status);
-                response.end(JSON.stringify(mahameruResponse.body));
+                return this.sendResponse(response, responseHeader, mahameruResponse);
             } catch (error: any) {
-                const serverError = error instanceof MahameruHttpServerError
-                    ? error
-                    : new MahameruHttpServerError(error instanceof Error ? error.message : undefined);
+                const errorResponse = await this.runErrorHandler(
+                    error,
+                    {
+                        ...requestContext,
+                        params: requestContext.params ?? {}
+                    }
+                );
 
-                console.error(serverError.details ?? error);
-                response.writeHead(serverError.statusCode, { 'Content-Type': 'application/json' });
-                response.end(JSON.stringify({ error: serverError.message }));
+                return this.sendResponse(response, responseHeader, errorResponse);
             }
         });
 
@@ -297,6 +303,62 @@ export class Mahameru {
         this.middleware = middleware as MahameruMiddleware;
     }
 
+    protected async loadErrorHandler(appPath: string) {
+        const errorHandlerPaths = [
+            join(appPath, 'error.ts'),
+            join(appPath, 'error.js')
+        ];
+
+        const errorHandlerPath = errorHandlerPaths.find(existsSync);
+
+        if (!errorHandlerPath) {
+            this.errorHandler = undefined;
+
+            return;
+        }
+
+        const fileUrl = pathToFileURL(resolve(errorHandlerPath)).href;
+        const errorHandlerModule = await import(/* webpackIgnore: true */ fileUrl);
+        const errorHandler = errorHandlerModule.default;
+
+        if (typeof errorHandler !== 'function') {
+            throw new MahameruHttpServerError(
+                `Error handler at '${errorHandlerPath}' must export a default function.`
+            );
+        }
+
+        this.errorHandler = errorHandler as MahameruErrorHandler;
+    }
+
+    protected async loadNotFoundHandler(appPath: string) {
+        const notFoundHandlerPaths = [
+            join(appPath, 'routes', 'not-found.ts'),
+            join(appPath, 'routes', 'not-found.js')
+        ];
+
+        const notFoundHandlerPath = notFoundHandlerPaths.find(existsSync);
+
+        if (!notFoundHandlerPath) {
+            this.notFoundHandler = undefined;
+            return;
+        }
+
+        const fileUrl = pathToFileURL(resolve(notFoundHandlerPath)).href;
+        const notFoundHandlerModule = await import(/* webpackIgnore: true */ fileUrl);
+        const supportedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
+        const hasValidHandler = supportedMethods.some((supportedMethod) =>
+            typeof notFoundHandlerModule[supportedMethod] === 'function'
+        );
+
+        if (!hasValidHandler) {
+            throw new MahameruHttpServerError(
+                `Not found handler at '${notFoundHandlerPath}' must export at least one HTTP method handler.`
+            );
+        }
+
+        this.notFoundHandler = notFoundHandlerModule as RouteHandlerModule;
+    }
+
     protected async runMiddlewarePipeline(
         middleware: MahameruMiddleware,
         context: MahameruMiddlewareContext,
@@ -313,6 +375,60 @@ export class Mahameru {
         return this.normalizeMahameruResponse(
             response,
             'Global middleware must return a MahameruResponse instance.'
+        );
+    }
+
+    protected async runErrorHandler(
+        error: unknown,
+        context: MahameruMiddlewareContext
+    ): Promise<MahameruResponse> {
+        const fallbackResponse = this.createInternalServerErrorResponse(error);
+
+        if (!this.errorHandler) {
+            console.error(error instanceof MahameruHttpServerError ? error.details ?? error : error);
+
+            return fallbackResponse;
+        }
+
+        try {
+            const handlerResponse = await this.errorHandler(
+                {
+                    ...context,
+                    error
+                },
+                async () => fallbackResponse
+            );
+
+            return this.normalizeMahameruResponse(
+                handlerResponse,
+                'Error handler must return a MahameruResponse instance.'
+            );
+        } catch (handlerError) {
+            console.error(handlerError);
+            return fallbackResponse;
+        }
+    }
+
+    protected async runNotFoundHandler(
+        request: MahameruRequest,
+        method: string,
+        path: string
+    ): Promise<MahameruResponse | undefined> {
+        if (!this.notFoundHandler) {
+            return undefined;
+        }
+
+        const handler = this.notFoundHandler[method];
+
+        if (typeof handler !== 'function') {
+            return undefined;
+        }
+
+        const response = await handler(request, this.container, { params: {} });
+
+        return this.normalizeMahameruResponse(
+            response,
+            `Not found handler for method '${method}' must return a MahameruResponse instance.`
         );
     }
 
@@ -357,6 +473,39 @@ export class Mahameru {
             status: value.status,
             headers: normalizedHeaders
         });
+    }
+
+    protected createInternalServerErrorResponse(error: unknown): MahameruResponse {
+        const serverError = error instanceof MahameruHttpServerError
+            ? error
+            : new MahameruHttpServerError(error instanceof Error ? error.message : undefined);
+
+        return MahameruResponse.json(
+            { error: serverError.message },
+            { status: serverError.statusCode }
+        );
+    }
+
+    protected sendResponse(response: any, responseHeader: Headers, mahameruResponse: MahameruResponse) {
+        const finalHeaders = new Headers();
+
+        responseHeader.forEach((value, key) => {
+            finalHeaders.append(key, value);
+        });
+
+        if (mahameruResponse.headers instanceof Headers) {
+            mahameruResponse.headers.forEach((value, key) => {
+                finalHeaders.set(key, value);
+            });
+        } else if (mahameruResponse.headers) {
+            for (const [key, value] of Object.entries(mahameruResponse.headers)) {
+                finalHeaders.set(key, value as string);
+            }
+        }
+
+        response.setHeaders(finalHeaders);
+        response.writeHead(mahameruResponse.status);
+        response.end(JSON.stringify(mahameruResponse.body));
     }
 
     protected buildConfig(options: Partial<MahameruConfig>): MahameruExtendedConfig {
