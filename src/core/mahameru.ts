@@ -34,10 +34,12 @@ export interface RouteItem {
 
 type RouteHandlerModule = Partial<Record<string, RouteHandler>>;
 
+export type RouteHandlerContext = { params: Record<string, string> };
+
 export type RouteHandler = (
     request: MahameruRequest,
     container: MahameruContainer,
-    context: { params: Record<string, string> }
+    context: RouteHandlerContext
 ) => Promise<MahameruResponse> | MahameruResponse;
 
 export interface MahameruMiddlewareContext {
