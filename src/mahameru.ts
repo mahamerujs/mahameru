@@ -188,10 +188,12 @@ export class Mahameru {
     protected httpServer: HttpServer | null = null;
     protected isShuttingDown = false;
     protected handleOnHttpClose?: () => void;
+    protected initConfig?: Partial<MahameruConfig>;
 
     constructor(
         options?: Partial<MahameruConfig>
     ) {
+        this.initConfig = options
         this.options = this.buildConfig(options);
         this.container = new MahameruContainer({
             modulesDir: join(this.options.appPath, this.options.modulesDir)
@@ -934,7 +936,7 @@ type MahameruGeneratedRoutes = ${routeUnion};
             ...options
         };
 
-        return {
+        const mergeAll = {
             ...mahameruDefaultBaseConfig,
             ...mergedConfig,
             appPath: join(
@@ -944,6 +946,16 @@ type MahameruGeneratedRoutes = ${routeUnion};
                     : mahameruDefaultBaseConfig.productionDir
             )
         };
+
+        if(this.initConfig &&this.initConfig.host) {
+            mergeAll.host = this.initConfig.host;
+        }
+
+        if(this.initConfig &&this.initConfig.port) {
+            mergeAll.port = this.initConfig.port;
+        }
+
+        return mergeAll;
     }
 
     protected findMatchedRoute(matchUrl: string) {
@@ -976,7 +988,7 @@ type MahameruGeneratedRoutes = ${routeUnion};
     protected async reloadRuntimeState() {
         const userConfigFilePath = this.options.dev ? join(this.options.rootPath, this.options.mahameruConfigFile) : join(this.options.rootPath, this.options.productionDir, this.options.productionConfigFile);
         this.loadEnvironmentVariables();
-        await this.loadUserConfig(userConfigFilePath);
+        // await this.loadUserConfig(userConfigFilePath);
         this.resetRuntimeState();
         await this.container.discover();
         await this.scanRoutes(join(this.options.appPath, this.options.routesDir));
