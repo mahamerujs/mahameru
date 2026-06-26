@@ -60,11 +60,17 @@ Mahameru supports a convention-based global middleware:
 The file must export a default middleware function with the signature below:
 
 ```ts
-import { type MahameruMiddleware } from 'mahameru/core';
+import type { MahameruMiddleware } from 'mahameru';
 
-async function middleware(context: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
-    return next();
-}
+const middleware: MahameruMiddleware = async (_context, _isProtectedRoute, next) => {
+    try {
+        // Middleware logic...
+
+        return await next();
+    } catch (error) {
+        throw error;
+    }
+};
 
 export default middleware;
 ```
@@ -72,23 +78,32 @@ export default middleware;
 Example with route-specific conditions:
 
 ```ts
-import { type MahameruMiddlewareContext, type MahameruNext, MahameruResponse } from 'mahameru/core';
-import { authValidation } from './helpers/auth-middleware.js';
+import type { MahameruMiddleware, ProtectedRoute } from 'mahameru';
+import { authValidation } from './helpers/auth-middleware';
 
-const protectedRoutes = ['/user'];
+export const protectedRoutes: ProtectedRoute<MahameruGeneratedRoutes> = [
+    '/user',
+    '/me'
+];
 
-export default async function middleware({ request, path, container, params }: MahameruMiddlewareContext, next: MahameruNext): Promise<MahameruResponse> {
+const middleware: MahameruMiddleware = async (context, isProtectedRoute, next) => {
     try {
-        if (protectedRoutes.some(route => path.startsWith(route)))
-            await authValidation(request, path, container, params, protectedRoutes);
+        const { request, container } = context;
+
+        // Example login using query
+        // http://localhost:3000/user?auth={"username":"bintan","secret":"1234"}
+        if (isProtectedRoute)
+            await authValidation(request, container);
 
         // Other middleware logic...
 
         return await next();
     } catch (error) {
-        throw error
+        throw error;
     }
 };
+
+export default middleware;
 ```
 
 Because this middleware is global, filtering for specific routes should be done inside the middleware itself with `if` conditions using `path` and `method`.
@@ -103,23 +118,27 @@ Mahameru supports a convention-based global error handler:
 The file must export a default function:
 
 ```ts
-import { MahameruError, MahameruHttpServerError, MahameruResponse, type MahameruErrorHandlerContext } from "mahameru/core";
-import { UnauthorizedError } from "./common/error.js";
+import { type MahameruErrorHandler, MahameruResponse } from "mahameru";
+import { NotFoundError, UnauthorizedError } from "./common/error";
 
-export default async function errorHandler({ error }: MahameruErrorHandlerContext) {
-    if (error instanceof UnauthorizedError)
-        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: error.statusCode });
-
-    if (error instanceof Error)
-        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: 400 });
+const errorHandler: MahameruErrorHandler = async ({ error }) => {
+    if (error instanceof UnauthorizedError || error instanceof NotFoundError)
+        return MahameruResponse.json({
+            success: false,
+            error: error.code,
+            message: error.message
+        }, { status: error.statusCode });
 
     console.error(error);
 
-    if (error instanceof MahameruHttpServerError || error instanceof MahameruError)
-        return MahameruResponse.json({ success: false, error: error.name, message: error.message }, { status: 500 });
-
-    return MahameruResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return MahameruResponse.json({
+        success: false,
+        error: 'Internal Server Error'
+    }, { status: 500 });
 }
+
+export default errorHandler
+
 ```
 
 The handler receives the request context plus `error`, and may either return a custom response directly or call `next()` to use Mahameru's fallback internal server response.
@@ -134,12 +153,15 @@ Mahameru supports a convention-based custom not-found handler:
 This file follows the same route-style method exports as other route files:
 
 ```ts
-import { MahameruResponse, type MahameruContainer, type MahameruRequest, type RouteHandlerContext } from 'mahameru/core'
+import { MahameruResponse, type RouteHandler } from 'mahameru'
 
-export async function GET(request: MahameruRequest, container: MahameruContainer, context: RouteHandlerContext) {
-    const path = request.url.split('?')[0];
-
-    return MahameruResponse.json({ success: false, error: 'NOT_FOUND', message: 'Route not found', path }, { status: 404 });
+export const GET: RouteHandler = (request) => {
+    return MahameruResponse.json({
+        success: false,
+        error: 'NOT_FOUND',
+        message: 'Route not found',
+        path: request.path
+    }, { status: 404 });
 }
 ```
 
