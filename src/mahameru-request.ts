@@ -1,20 +1,21 @@
-import { IncomingMessage } from "http";
+import type { IncomingMessage } from "node:http";
 
 export class MahameruRequest {
     public method: string;
     public url: string;
     public headers: any;
     public query: URLSearchParams;
+    public path: string;
     private rawReq: IncomingMessage;
 
-    constructor(req: IncomingMessage) {
-        this.rawReq = req;
-        this.method = req.method || 'GET';
-        this.url = req.url || '/';
-
-        const parsedUrl = new URL(this.url, `http://${req.headers.host || 'localhost'}`);
+    constructor(request: IncomingMessage) {
+        this.rawReq = request;
+        this.method = request.method || 'GET';
+        this.url = request.url || '/';
+        this.path = request.url?.split('?')[0] || '/';
+        const parsedUrl = new URL(this.url, `http://${request.headers.host || 'localhost'}`);
         this.query = parsedUrl.searchParams;
-        this.headers = req.headers;
+        this.headers = request.headers;
     }
 
     async json(): Promise<any> {

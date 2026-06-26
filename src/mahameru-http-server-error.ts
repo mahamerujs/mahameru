@@ -7,8 +7,6 @@ export class MahameruHttpServerError extends Error {
         this.name = 'MahameruHttpServerError';
         this.details = details;
 
-        if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, MahameruHttpServerError);
-        }
+        Error.captureStackTrace(this, MahameruHttpServerError);
     }
 }

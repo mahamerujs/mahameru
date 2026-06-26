@@ -1,28 +1,25 @@
 {
-	"compilerOptions": {
-		"target": "ESNext",
-		"module": "NodeNext",
-		"moduleResolution": "nodenext",
-		"rootDir": "./src",
-		"outDir": "./dist",
-		"declaration": false,
-		"resolveJsonModule": true,
-		"emitDecoratorMetadata": true,
-		"experimentalDecorators": true,
-		"types": [
-			"node"
-		],
-		"paths": {
-			"@/*": [
-				"./src/*"
-			]
-		}
-	},
-	"include": [
-		"./src/**/*.ts"
-	],
-	"exclude": [
-		"./node_modules",
-		"./dist"
-	]
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "incremental": true,
+    "types": [
+      "node"
+    ],
+    "declaration": true,
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  },
+  "include": [
+    "./src/**/*.ts"
+  ],
+  "exclude": [
+    "./node_modules",
+    "./dist"
+  ]
 }
