@@ -63,6 +63,6 @@
     "picocolors": "^1.1.1"
   },
   "peerDependencies": {
-    "porterman": "^0.0.2"
+    "porterman": "^0.0.3"
   }
 }
