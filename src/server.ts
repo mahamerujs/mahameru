@@ -2,7 +2,6 @@ import { Mahameru } from "./mahameru";
 import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { MahameruError } from './mahameru-error';
 import { readFile } from 'node:fs/promises';
 import { MahameruIPCMessageServer } from './types';
 import { MahameruServerError } from "./mahameru-server-error";
@@ -130,21 +129,25 @@ function ensureServerEnvironment() {
 }
 
 async function loadConfig(configFilePath: string): Promise<Partial<MahameruConfig>> {
-
     const resolvedPath = resolve(configFilePath);
 
     if (configFilePath.endsWith('.json')) {
         try {
             return await readFile(resolvedPath, 'utf-8') as Partial<MahameruConfig>;
         } catch (error) {
-            throw new MahameruError(`Unable to load config file "${configFilePath}".`);
+            console.warn(`Unable to load config file "${configFilePath}". So we will ignore it.`);
+
+            return {};
         }
     }
 
     const module = runtimeRequire(resolvedPath);
 
     if (!module.default)
-        throw new MahameruServerError(`Config file "${configFilePath}" does not export a default export.`);
+        return {};
+
+    if (typeof module.default !== 'function')
+        return {};
 
     const configFunction = module.default as Config;
 
