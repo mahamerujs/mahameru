@@ -77,12 +77,15 @@ type DefaultHTTPResponse = ServerResponse<IncomingMessage> & {
     req: IncomingMessage;
 }
 
+export type PreInitHandler = () => Promise<void> | void;
+
 export class Mahameru {
     protected _initialized = false;
     protected routeRegistry: RouteItem[] = [];
     protected protectedRoutes: ProtectedRoute<any>[] = [];
     protected middleware?: MahameruMiddleware;
     protected errorHandler?: MahameruErrorHandler;
+    protected preInitHandler?: PreInitHandler;
     protected notFoundHandler?: RouteHandlerModule;
     protected httpServer: HttpServer | null = null;
     protected isShuttingDown = false;
@@ -562,6 +565,24 @@ type MahameruGeneratedRoutes = ${routeUnion};
         }
     }
 
+    protected async loadPreInitHandler(appPath: string) {
+        const preInitPath = join(appPath, 'pre-init.js');
+
+        if (!existsSync(preInitPath)) {
+            this.preInitHandler = undefined;
+
+            return;
+        }
+
+        const module = this.loadModule(preInitPath);
+        const preInitHandler = this.unwrapDefaultExport<PreInitHandler>(module);
+
+        if (typeof preInitHandler !== 'function')
+            return
+
+        this.preInitHandler = preInitHandler;
+    }
+
     protected async loadMiddleware(appPath: string) {
         const middlewarePath = join(appPath, 'middleware.js');
 
@@ -820,6 +841,12 @@ type MahameruGeneratedRoutes = ${routeUnion};
     protected async reloadRuntimeState() {
         this.loadEnvironmentVariables();
         this.resetRuntimeState();
+
+        await this.loadPreInitHandler(this.config.appPath);
+
+        if (typeof this.preInitHandler !== 'undefined')
+            await this.preInitHandler()
+
         await this.container.discover();
         await this.scanRoutes(join(this.config.appPath, this.config.routesDir));
         await this.loadMiddleware(this.config.appPath);
@@ -829,6 +856,7 @@ type MahameruGeneratedRoutes = ${routeUnion};
 
     protected resetRuntimeState() {
         this.routeRegistry = [];
+        this.preInitHandler = undefined;
         this.middleware = undefined;
         this.errorHandler = undefined;
         this.notFoundHandler = undefined;
