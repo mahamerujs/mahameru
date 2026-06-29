@@ -1,93 +1,20 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
-import { toKebabCase } from 'porterman/string-helper'
-import pc from 'picocolors';
+import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 
+import { validateProtectedRoute } from './helpers';
 import { MahameruHttpServerError } from './mahameru-http-server-error';
-import { MahameruContainer } from './mahameru-container';
 import { MahameruRequest } from './mahameru-request';
 import { MahameruResponse } from './mahameru-response';
 import { MahameruError } from './mahameru-error';
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
-import { validateProtectedRoute } from './helpers';
+import type { MahameruConfig, MahameruExtendedConfig } from './config';
+import { MahameruContainer } from './mahameru-container';
 
 const runtimeRequire = createRequire(__filename);
-
-export interface MahameruBaseConfig {
-    rootPath: string;
-    appPath: string;
-    productionDir: string;
-    productionConfigFile: string;
-    developmentDir: string;
-    httpServerSignature: string;
-    mahameruConfigFile: string;
-}
-
-export interface MahameruConfig {
-    /**
-     * Application name.
-     * Name cannot contain spaces.
-     * @type {string}
-     * @default 'MahameruJS'
-     * @example 'mahamerujs'
-     */
-    name: string;
-    /**
-     * Enable or disable the development mode.
-     * @type {boolean}
-     * @default false
-     */
-    dev: boolean;
-    /**
-     * Server port.
-     * @type {number}
-     * @default 3000
-     */
-    port: number;
-    /**
-     * Server host.
-     * @type {string}
-     * @default 'localhost'
-     */
-    host: string;
-    /**
-     * Enable or disable the trailing slash.
-     * @type {boolean}
-     * @default false
-     */
-    trailingSlash: boolean;
-    /**
-     * Allowed origins for CORS. Set to `undefined` to disable CORS.
-     * @type {string[] | undefined}
-     * @default undefined
-     */
-    allowedOrigins?: string[];
-    /**
-     * Disable the HTTP signature response header.
-     * X-Powered-By: MahameruJS
-     * @type {boolean}
-     * @default false
-     */
-    disableHttpSignatureResponse?: boolean;
-    /**
-     * Relative path to the modules directory.
-     * @type {string}
-     * @default modules
-     */
-    modulesDir: string;
-    /**
-     * Relative path to the routes directory.
-     * @type {string}
-     * @default routes
-     */
-    routesDir: string;
-}
-
-export type MahameruExtendedConfig = MahameruBaseConfig & MahameruConfig;
 
 export interface RouteItem {
     path: string;
@@ -136,8 +63,6 @@ interface MahameruResponseLike {
     headers?: Headers | Record<string, string>;
 }
 
-export type MahameruConfigFunction = (defaultConfig: MahameruConfig) => Promise<Partial<MahameruConfig>>;
-
 export type HTTPMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
 
 export type ProtectedRoute<T> = (
@@ -148,63 +73,44 @@ export type ProtectedRoute<T> = (
     }
 )[];
 
-export const mahameruDefaultBaseConfig: MahameruBaseConfig = {
-    rootPath: process.cwd(),
-    get appPath(): string {
-        return join(this.rootPath, this.developmentDir)
-    },
-    productionDir: '.mahameru',
-    productionConfigFile: '.mahameru.config.json',
-    developmentDir: '.mahameru',
-    httpServerSignature: 'MahameruJS',
-    mahameruConfigFile: 'mahameru.config.ts'
-}
-
-export const mahameruDefaultConfig: MahameruConfig = {
-    name: toKebabCase('MahameruJS'),
-    dev: process.env.MAHAMERU__MODE === 'development',
-    port: process.env.MAHAMERU__HTTP_LISTEN_PORT ? parseInt(process.env.MAHAMERU__HTTP_LISTEN_PORT) : 3000,
-    host: process.env.MAHAMERU__HTTP_LISTEN_HOST || 'localhost',
-    allowedOrigins: undefined,
-    trailingSlash: false,
-    modulesDir: 'modules',
-    routesDir: 'routes',
-    disableHttpSignatureResponse: false
-};
-
 type DefaultHTTPResponse = ServerResponse<IncomingMessage> & {
     req: IncomingMessage;
 }
 
 export class Mahameru {
     protected _initialized = false;
-    protected options: MahameruExtendedConfig;
     protected routeRegistry: RouteItem[] = [];
     protected protectedRoutes: ProtectedRoute<any>[] = [];
     protected middleware?: MahameruMiddleware;
     protected errorHandler?: MahameruErrorHandler;
     protected notFoundHandler?: RouteHandlerModule;
-    protected container: MahameruContainer;
     protected httpServer: HttpServer | null = null;
     protected isShuttingDown = false;
     protected handleOnHttpClose?: () => void;
-    protected initConfig?: Partial<MahameruConfig>;
+    protected container: MahameruContainer;
 
     constructor(
-        options?: Partial<MahameruConfig>
+        private readonly config: MahameruExtendedConfig
     ) {
-        this.initConfig = options
-        this.options = this.buildConfig(options);
         this.container = new MahameruContainer({
-            modulesDir: join(this.options.appPath, this.options.modulesDir)
+            modulesDir: join(this.config.appPath, this.config.modulesDir)
         });
     }
 
     /**
      * Indicates whether the Mahameru server has been initialized or not.
+     * @returns {boolean}
      */
     get initialized() {
         return this._initialized;
+    }
+
+    /**
+     * Indicates whether the Mahameru server is in development mode or not.
+     * @returns {boolean}
+     */
+    get developmentMode() {
+        return process.env.MAHAMERU__MODE === 'development';
     }
 
     /**
@@ -223,14 +129,21 @@ export class Mahameru {
             }
 
             this.httpServer
-                .listen(this.options.port, this.options.host)
+                .listen(this.config.port, this.config.host)
                 .on('listening', () => {
                     this._initialized = true;
 
                     this.setupIpcListener();
 
                     if (process.send)
-                        process.send({ type: 'READY', data: { mode: this.options.dev ? 'development' : 'production', host: this.options.host, port: this.options.port } } as MahameruIPCMessageServer);
+                        process.send({
+                            type: 'READY',
+                            data: {
+                                pid: process.pid,
+                                host: this.config.host,
+                                port: this.config.port
+                            }
+                        } as MahameruIPCMessageServer);
 
                     resolve(true)
                 })
@@ -248,7 +161,7 @@ export class Mahameru {
     }
 
     async devHRM(targetFile?: string) {
-        if (!this.options.dev || !this._initialized)
+        if (!this._initialized)
             return
 
         this.clearRuntimeRequireCache(targetFile);
@@ -280,7 +193,7 @@ export class Mahameru {
 
         await this.closeHttpServer()
 
-        console.log(`Graceful Shutting down... ${pc.green('Done')}`);
+        console.log(`Graceful Shutting down... Done`);
     }
 
     protected closeHttpServer() {
@@ -309,11 +222,6 @@ export class Mahameru {
         });
     }
 
-    reconfigure(options?: Partial<MahameruConfig>) {
-        this.options = this.buildConfig(options);
-        this.resetRuntimeState();
-    }
-
     protected createHttpServer() {
         return createServer(async (request, response) => {
             const rawReqUrl = request.url?.split('?')[0] || '/';
@@ -329,21 +237,24 @@ export class Mahameru {
             };
 
             try {
-                const origin = request.headers.origin;
                 responseHeader.append('Content-Type', 'application/json');
 
-                if (!this.options.disableHttpSignatureResponse) {
-                    responseHeader.append('X-Powered-By', this.options.httpServerSignature);
+                if (!this.config.disableHttpSignatureResponse) {
+                    responseHeader.append('X-Powered-By', this.config.httpServerSignature);
                 }
 
                 response.setHeaders(responseHeader);
 
-                if (origin && this.options.allowedOrigins && !this.options.allowedOrigins.includes(origin)) {
+                if (
+                    request.headers.origin &&
+                    this.config.allowedOrigins &&
+                    !this.config.allowedOrigins.includes(request.headers.origin)
+                ) {
                     response.writeHead(403);
                     return response.end(JSON.stringify({ error: 'Forbidden' }));
                 }
 
-                if (this.options.trailingSlash === false && rawReqUrl.length > 1 && rawReqUrl.endsWith('/')) {
+                if (this.config.trailingSlash === false && rawReqUrl.length > 1 && rawReqUrl.endsWith('/')) {
                     const cleanUrl = matchUrl;
                     const queryStr = request.url?.split('?')[1];
                     const redirectPath = cleanUrl + (queryStr ? `?${queryStr}` : '');
@@ -369,7 +280,7 @@ export class Mahameru {
 
                 let handler: RouteHandler;
 
-                if (this.options.dev) {
+                if (this.developmentMode) {
                     try {
                         handler = this.loadDevRouteHandler(matchedRoute.pathFS, method);
                     } catch (e: any) {
@@ -502,7 +413,7 @@ export class Mahameru {
 
                 await this.reloadRuntimeState();
 
-                this.log(`Reloading runtime state... ${pc.green('Done')}`);
+                this.log(`Reloading runtime state... Done`);
 
                 break;
 
@@ -512,7 +423,7 @@ export class Mahameru {
                 await this.close();
                 await this.initialize();
 
-                this.log(`Restarting server... ${pc.green('Done')}`);
+                this.log(`Restarting server... Done`);
 
                 break;
 
@@ -536,7 +447,7 @@ export class Mahameru {
 
         await this.generateRouteTypes();
 
-        const items = readdirSync(currentDir, { withFileTypes: true });
+        const items = await readdir(currentDir, { withFileTypes: true });
 
         for (const item of items) {
             const fullPath = join(currentDir, item.name);
@@ -547,9 +458,7 @@ export class Mahameru {
                 continue;
             }
 
-            const isRouteFile = this.options.dev
-                ? (item.name === 'route.js')
-                : (item.name === 'route.ts' || item.name === 'route.js');
+            const isRouteFile = item.name === 'route.js';
 
             if (item.isFile() && isRouteFile) {
                 const relativePath = relative(baseDir, currentDir);
@@ -577,7 +486,7 @@ export class Mahameru {
 
                 let handlers = null;
 
-                if (!this.options.dev) {
+                if (!this.developmentMode) {
                     handlers = this.loadModule(fullPath);
                 }
 
@@ -594,7 +503,7 @@ export class Mahameru {
 
     protected async generateRouteTypes() {
         const foundPaths: string[] = [];
-        const routesPath = join(this.options.appPath, this.options.routesDir);
+        const routesPath = join(this.config.appPath, this.config.routesDir);
 
         async function scan(dir: string, currentRoute = '') {
             if (!existsSync(dir))
@@ -612,7 +521,7 @@ export class Mahameru {
                         : file;
 
                     await scan(fullPath, `${currentRoute}/${folderName}`);
-                } else if (file === 'route.ts' || file === 'route.js') {
+                } else if (file === 'route.js') {
                     foundPaths.push(currentRoute === '' ? '/' : currentRoute);
                 }
             }
@@ -640,9 +549,9 @@ type MahameruGeneratedRoutes = ${routeUnion};
     }
 
     protected loadEnvironmentVariables() {
-        const defaultEnvFilePath = join(this.options.rootPath, '.env');
+        const defaultEnvFilePath = join(this.config.rootPath, '.env');
         const MAHAMERU__MODE = process.env.MAHAMERU__MODE === "development" ? "development" : "production";
-        const envFilePath = join(this.options.rootPath, `.env.${MAHAMERU__MODE}`);
+        const envFilePath = join(this.config.rootPath, `.env.${MAHAMERU__MODE}`);
 
         if (existsSync(defaultEnvFilePath)) {
             process.loadEnvFile(defaultEnvFilePath)
@@ -653,59 +562,16 @@ type MahameruGeneratedRoutes = ${routeUnion};
         }
     }
 
-    protected async loadUserConfig(configPath: string) {
-        if (!existsSync(configPath))
-            return;
-
-        let userConfig: Partial<MahameruConfig>
-
-        if (this.options.dev) {
-            const configModule = this.loadModule(configPath, this.options.dev);
-            const userConfigFunction = this.unwrapDefaultExport(configModule) as MahameruConfigFunction;
-
-            if (typeof userConfigFunction !== 'function')
-                return
-
-            userConfig = await userConfigFunction(mahameruDefaultConfig);
-        } else {
-            try {
-                const rawConfigJSON = await readFile(configPath, 'utf-8');
-                userConfig = JSON.parse(rawConfigJSON);
-            } catch (error) {
-                console.error(pc.red(`Error loading config file: ${configPath}`));
-                console.error(pc.yellow(`${configPath} is not a valid JSON file.`));
-
-                if (this.initialized) {
-                    await this.close();
-                }
-
-                return
-            }
-        }
-
-        this.options = this.buildConfig(userConfig);
-    }
-
     protected async loadMiddleware(appPath: string) {
-        const middlewarePaths = [
-            join(appPath, 'middleware.ts'),
-            join(appPath, 'middleware.js')
-        ];
+        const middlewarePath = join(appPath, 'middleware.js');
 
-        const middlewarePath = middlewarePaths.find(existsSync);
-
-        if (!middlewarePath) {
+        if (!existsSync(middlewarePath)) {
             this.middleware = undefined;
             return;
         }
 
-        const middlewareModule = this.loadModule(middlewarePath, this.options.dev);
-
-        if (middlewareModule && middlewareModule.protectedRoutes) {
-            this.protectedRoutes = middlewareModule.protectedRoutes
-        }
-
-        const middleware = this.unwrapDefaultExport(middlewareModule);
+        const middlewareModule = this.loadModule(middlewarePath, this.developmentMode);
+        const middleware = this.unwrapDefaultExport<MahameruMiddleware>(middlewareModule);
 
         if (typeof middleware !== 'function') {
             throw new MahameruError(
@@ -713,24 +579,23 @@ type MahameruGeneratedRoutes = ${routeUnion};
             );
         }
 
+        if (middlewareModule && middlewareModule.protectedRoutes) {
+            this.protectedRoutes = middlewareModule.protectedRoutes
+        }
+
         this.middleware = middleware as MahameruMiddleware;
     }
 
     protected async loadErrorHandler(appPath: string) {
-        const errorHandlerPaths = [
-            join(appPath, 'error.ts'),
-            join(appPath, 'error.js')
-        ];
+        const errorHandlerPath = join(appPath, 'error.js');
 
-        const errorHandlerPath = errorHandlerPaths.find(existsSync);
-
-        if (!errorHandlerPath) {
+        if (!existsSync(errorHandlerPath)) {
             this.errorHandler = undefined;
 
             return;
         }
 
-        const errorHandlerModule = this.loadModule(errorHandlerPath, this.options.dev);
+        const errorHandlerModule = this.loadModule(errorHandlerPath, this.developmentMode);
         const errorHandler = this.unwrapDefaultExport(errorHandlerModule);
 
         if (typeof errorHandler !== 'function') {
@@ -743,19 +608,14 @@ type MahameruGeneratedRoutes = ${routeUnion};
     }
 
     protected async loadNotFoundHandler(appPath: string) {
-        const notFoundHandlerPaths = [
-            join(appPath, 'routes', 'not-found.ts'),
-            join(appPath, 'routes', 'not-found.js')
-        ];
+        const notFoundHandlerPath = join(appPath, 'routes', 'not-found.js');
 
-        const notFoundHandlerPath = notFoundHandlerPaths.find(existsSync);
-
-        if (!notFoundHandlerPath) {
+        if (!existsSync(notFoundHandlerPath)) {
             this.notFoundHandler = undefined;
             return;
         }
 
-        const notFoundHandlerModule = this.loadModule(notFoundHandlerPath, this.options.dev);
+        const notFoundHandlerModule = this.loadModule(notFoundHandlerPath, this.developmentMode);
         const supportedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
         const hasValidHandler = supportedMethods.some((supportedMethod) =>
             typeof notFoundHandlerModule[supportedMethod] === 'function'
@@ -930,34 +790,6 @@ type MahameruGeneratedRoutes = ${routeUnion};
         this.requestLogger(response);
     }
 
-    protected buildConfig(options?: Partial<MahameruConfig>): MahameruExtendedConfig {
-        const mergedConfig = {
-            ...mahameruDefaultConfig,
-            ...options
-        };
-
-        const mergeAll = {
-            ...mahameruDefaultBaseConfig,
-            ...mergedConfig,
-            appPath: join(
-                mahameruDefaultBaseConfig.rootPath,
-                mergedConfig.dev
-                    ? mahameruDefaultBaseConfig.developmentDir
-                    : mahameruDefaultBaseConfig.productionDir
-            )
-        };
-
-        if(this.initConfig &&this.initConfig.host) {
-            mergeAll.host = this.initConfig.host;
-        }
-
-        if(this.initConfig &&this.initConfig.port) {
-            mergeAll.port = this.initConfig.port;
-        }
-
-        return mergeAll;
-    }
-
     protected findMatchedRoute(matchUrl: string) {
         let matchedRoute: RouteItem | null = null;
         let matchResult: RegExpExecArray | null = null;
@@ -986,15 +818,13 @@ type MahameruGeneratedRoutes = ${routeUnion};
     }
 
     protected async reloadRuntimeState() {
-        const userConfigFilePath = this.options.dev ? join(this.options.rootPath, this.options.mahameruConfigFile) : join(this.options.rootPath, this.options.productionDir, this.options.productionConfigFile);
         this.loadEnvironmentVariables();
-        // await this.loadUserConfig(userConfigFilePath);
         this.resetRuntimeState();
         await this.container.discover();
-        await this.scanRoutes(join(this.options.appPath, this.options.routesDir));
-        await this.loadMiddleware(this.options.appPath);
-        await this.loadErrorHandler(this.options.appPath);
-        await this.loadNotFoundHandler(this.options.appPath);
+        await this.scanRoutes(join(this.config.appPath, this.config.routesDir));
+        await this.loadMiddleware(this.config.appPath);
+        await this.loadErrorHandler(this.config.appPath);
+        await this.loadNotFoundHandler(this.config.appPath);
     }
 
     protected resetRuntimeState() {
@@ -1003,12 +833,12 @@ type MahameruGeneratedRoutes = ${routeUnion};
         this.errorHandler = undefined;
         this.notFoundHandler = undefined;
         this.container = new MahameruContainer({
-            modulesDir: join(this.options.appPath, this.options.modulesDir)
+            modulesDir: join(this.config.appPath, this.config.modulesDir)
         });
     }
 
     protected clearRuntimeRequireCache(targetFile?: string) {
-        const runtimeRoot = resolve(this.options.appPath);
+        const runtimeRoot = resolve(this.config.appPath);
 
         for (const cacheKey of Object.keys(runtimeRequire.cache)) {
             if (cacheKey.startsWith(runtimeRoot)) {
@@ -1050,26 +880,14 @@ type MahameruGeneratedRoutes = ${routeUnion};
     }
 
     protected requestLogger(response: DefaultHTTPResponse) {
-        if (!this.options.dev)
+        if (!this.developmentMode)
             return
 
-        const parseStatusCodeColor = (statusCode: number) => {
-            if (statusCode >= 200 && statusCode < 300) {
-                return pc.green(statusCode);
-            } else if (statusCode >= 300 && statusCode < 400) {
-                return pc.cyan(statusCode);
-            } else if (statusCode >= 400 && statusCode < 500) {
-                return pc.yellow(statusCode);
-            } else {
-                return pc.red(statusCode);
-            }
-        }
-
-        console.log(`${pc.yellow(response.req.method)} ${parseStatusCodeColor(response.statusCode)} ${response.req.url}`);
+        console.log(`${response.req.method} ${response.statusCode} ${response.req.url}`);
     }
 
     protected log(...data: any[]) {
-        if (!this.options.dev)
+        if (!this.developmentMode)
             return
 
         console.log(...data);

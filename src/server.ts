@@ -1,13 +1,17 @@
-import pc from 'picocolors';
-import { Mahameru, mahameruDefaultConfig, mahameruDefaultBaseConfig, MahameruConfigFunction, MahameruConfig } from "./mahameru";
-import { MahameruServerError } from './mahameru-server-error';
+import { Mahameru } from "./mahameru";
 import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { MahameruError } from './mahameru-error';
 import { readFile } from 'node:fs/promises';
+import { MahameruIPCMessageServer } from './types';
+import { MahameruServerError } from "./mahameru-server-error";
+import { type Config, type MahameruConfig, mahameruDefaultBaseConfig, mahameruDefaultConfig, type MahameruExtendedConfig } from "./config";
 
+let startUsage = process.cpuUsage();
+let startTime = process.hrtime.bigint();
 let app: Mahameru | null = null;
+
 const runtimeRequire = createRequire(__filename);
 
 (async () => {
@@ -16,18 +20,24 @@ const runtimeRequire = createRequire(__filename);
         let configFilePath
 
         if (env.dev) {
-            configFilePath = join(env.ROOT_PATH, mahameruDefaultBaseConfig.mahameruConfigFile);
+            configFilePath = join(env.ROOT_PATH, 'mahameru.config.ts');
         } else {
-            configFilePath = join(env.ROOT_PATH, mahameruDefaultBaseConfig.productionDir, mahameruDefaultBaseConfig.productionConfigFile);
+            configFilePath = join(env.ROOT_PATH, mahameruDefaultBaseConfig.productionDir, '.mahameru.config.json');
         }
 
         const config = await loadConfig(configFilePath);
 
-        app = new Mahameru({
-            dev: env.dev,
-            port: env.port || config.port,
-            host: env.host || config.host
-        });
+        const extendedConfig: MahameruExtendedConfig = {
+            ...mahameruDefaultBaseConfig,
+            ...mahameruDefaultConfig,
+            ...config
+        }
+
+        app = new Mahameru(extendedConfig);
+
+        sendProcessUsage()
+
+        setInterval(sendProcessUsage, env.SEND_PROCESS_USAGE_INTERVAL || 5000)
 
         await app.initialize();
 
@@ -39,6 +49,7 @@ const runtimeRequire = createRequire(__filename);
 
             try {
                 await app?.close();
+
                 process.exit(0);
             } catch (error) {
                 console.error(error);
@@ -47,11 +58,31 @@ const runtimeRequire = createRequire(__filename);
             }
         }
 
+        process.on('SIGKILL', shutdown);
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
     } catch (error) {
+        if (process.send) {
+            const newError = error as Error;
+
+            process.send({
+                type: 'ERROR',
+                data: {
+                    message: newError?.message,
+                    code: newError?.cause,
+                    stack: newError?.stack
+                }
+            } as MahameruIPCMessageServer);
+
+            setTimeout(() => {
+                process.exit(1);
+            }, 1000);
+
+            return
+        }
+
         if (error instanceof MahameruServerError) {
-            console.error(pc.red(error.message));
+            console.error(error.message);
         } else {
             console.error(error);
         }
@@ -69,21 +100,23 @@ function ensureServerEnvironment() {
     const host = process.env.MAHAMERU__HTTP_LISTEN_HOST?.trim()
     const ROOT_PATH = process.env.MAHAMERU__ROOT_PATH?.trim()
     const CONFIG_FILE = process.env.MAHAMERU__CONFIG_FILE?.trim()
+    const SEND_PROCESS_USAGE_INTERVAL = process.env.MAHAMERU__SEND_PROCESS_USAGE_INTERVAL ? parseInt(process.env.MAHAMERU__SEND_PROCESS_USAGE_INTERVAL) : undefined;
 
     if (!ROOT_PATH)
         throw new MahameruServerError('MAHAMERU__ROOT_PATH environment variable is not defined.');
 
-    if (!CONFIG_FILE)
-        throw new MahameruServerError('MAHAMERU__CONFIG_FILE environment variable is not defined.');
+    let configFilePath: string | null = null
 
-    let configFilePath: string | null = join(ROOT_PATH, CONFIG_FILE);
-    const packageJsonPath = join(ROOT_PATH, 'package.json');
+    if (CONFIG_FILE) {
+        configFilePath = join(ROOT_PATH, CONFIG_FILE);
+        const packageJsonPath = join(ROOT_PATH, 'package.json');
 
-    if (!existsSync(packageJsonPath))
-        throw new MahameruServerError('Current directory is not a Node.js project. Cannot find package.json file.');
+        if (!existsSync(packageJsonPath))
+            throw new MahameruServerError('Current directory is not a Node.js project. Cannot find package.json file.');
 
-    if (!existsSync(configFilePath))
-        configFilePath = null;
+        if (!existsSync(configFilePath))
+            configFilePath = null;
+    }
 
     return {
         dev,
@@ -91,21 +124,12 @@ function ensureServerEnvironment() {
         host,
         ROOT_PATH,
         CONFIG_FILE,
-        configFilePath
+        configFilePath,
+        SEND_PROCESS_USAGE_INTERVAL
     }
 }
 
-function printServerReady({ dev, host, port }: { dev: boolean, host: string, port: number }) {
-    console.log('\x1b[32m Mahameru Server Ready!\x1b[0m');
-    console.log(`   \x1b[1mMode:\x1b[22m    \x1b[36m${dev ? 'Development' : 'Production'}\x1b[0m`);
-    console.log(`   \x1b[1mLocal:\x1b[22m   \x1b[36mhttp://${host}:${port}\x1b[0m`);
-    console.log(`   \x1b[1mHost:\x1b[22m    ${host}`);
-    console.log(`   \x1b[1mPort:\x1b[22m    ${port}\n`);
-    console.log('\x1b[90mPress Ctrl+C to stop the server\x1b[0m\n');
-}
-
 async function loadConfig(configFilePath: string): Promise<Partial<MahameruConfig>> {
-    let config: Partial<MahameruConfig>
 
     const resolvedPath = resolve(configFilePath);
 
@@ -122,7 +146,68 @@ async function loadConfig(configFilePath: string): Promise<Partial<MahameruConfi
     if (!module.default)
         throw new MahameruServerError(`Config file "${configFilePath}" does not export a default export.`);
 
-    const configFunction = module.default as MahameruConfigFunction;
+    const configFunction = module.default as Config;
 
     return await configFunction(mahameruDefaultConfig);
+}
+
+async function sendProcessUsage() {
+    if (process.send) {
+        const newUsage = process.cpuUsage();
+        const newTime = process.hrtime.bigint();
+
+        const elapUser = newUsage.user - startUsage.user;
+        const elapSyst = newUsage.system - startUsage.system;
+        const totalCpuTime = elapUser + elapSyst;
+        const elapsedTime = Number(newTime - startTime) / 1000;
+        const cpuPercent = (totalCpuTime / elapsedTime * 100).toFixed(2);
+
+        startUsage = newUsage;
+        startTime = newTime;
+
+        const rawData = {
+            cpu: process.cpuUsage(),
+            memory: process.memoryUsage(),
+            uptime: process.uptime()
+        };
+
+        const toMB = (bytes: number) => (bytes / 1024 / 1024).toFixed(2) + ' MB';
+
+        const memory = {
+            rss: toMB(rawData.memory.rss),
+            heapTotal: toMB(rawData.memory.heapTotal),
+            heapUsed: toMB(rawData.memory.heapUsed),
+            external: toMB(rawData.memory.external),
+        };
+
+        const cpu = {
+            user: (rawData.cpu.user / 1000).toFixed(2) + ' ms',
+            system: (rawData.cpu.system / 1000).toFixed(2) + ' ms',
+            usage: cpuPercent + '%' // Menambahkan simbol % agar lebih jelas
+        };
+
+        const uptimeSeconds = Math.floor(rawData.uptime);
+        const hours = Math.floor(uptimeSeconds / 3600);
+        const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+        const seconds = uptimeSeconds % 60;
+
+        let uptimeParts: string[] = [];
+
+        if (hours > 0) {
+            uptimeParts.push(`${hours}h`);
+        }
+        if (minutes > 0 || hours > 0)
+            uptimeParts.push(`${minutes}m`);
+
+        uptimeParts.push(`${seconds}s`);
+
+        const uptime = uptimeParts.join(' ');
+
+        const payload: MahameruIPCMessageServer = {
+            type: 'PROCESS_USAGE',
+            data: { cpu, memory, uptime, raw: rawData }
+        }
+
+        process.send(payload);
+    }
 }

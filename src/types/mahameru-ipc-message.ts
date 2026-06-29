@@ -5,7 +5,7 @@ export interface MahameruIPCChildDataMap {
     RESTART: undefined;
     SHUTDOWN: { gracePeriod: number } | undefined;
     DEV_HRM: { changedFile?: string }
-    GENERATE_ROUTE_TYPES: undefined
+    GENERATE_ROUTE_TYPES: undefined;
 }
 
 export type MahameruIPCChildMessageTypes = keyof MahameruIPCChildDataMap;
@@ -22,8 +22,9 @@ export interface MahameruIPCServerDataMap {
     SHUTDOWN_DONE: undefined;
     GENERATE_ROUTE_TYPES_DONE: undefined;
     ERROR: { message: string; stack?: string; code?: string };
-    READY: { mode: MahameruMode; port: number; host: string };
+    READY: { port: number; host: string; pid: number };
     LOG: string;
+    PROCESS_USAGE: ProcessUsage
 }
 
 export type MahameruIPCServerMessageTypes = keyof MahameruIPCServerDataMap;
@@ -35,3 +36,33 @@ export type MahameruIPCMessageServer<K extends MahameruIPCServerMessageTypes = M
         ? { data?: undefined }
         : { data: MahameruIPCServerDataMap[P] });
 }[K];
+
+export type ProcessUsage = {
+    cpu: {
+        user: string,
+        system: string,
+        usage: string
+    },
+    memory: {
+        rss: string,
+        heapTotal: string,
+        heapUsed: string,
+        external: string
+    },
+    uptime: string
+    raw: {
+        cpu: {
+            user: number,
+            system: number
+        },
+        memory: {
+            rss: number,
+            heapTotal: number,
+            heapUsed: number,
+            external: number,
+            arrayBuffers: number
+        },
+        uptime: number
+    }
+}
+

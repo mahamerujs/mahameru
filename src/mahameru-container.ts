@@ -1,6 +1,5 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { MahameruError } from './mahameru-error';
 import { createRequire } from 'node:module';
 import { MahameruContainerError } from './mahameru-container-error';
 
@@ -36,9 +35,8 @@ export class MahameruContainer {
     get<T>(ClassTarget: ClassConstructor<T>): T {
         const instance = this.instances.get(ClassTarget);
 
-        if (!instance) {
-            throw new MahameruError(`Dependency '${ClassTarget.name}' is not found in the container.`);
-        }
+        if (!instance)
+            throw new MahameruContainerError(ClassTarget.name, `Dependency '${ClassTarget.name}' is not found in the container.`);
 
         return instance;
     }
@@ -105,7 +103,6 @@ export class MahameruContainer {
 
     private resolveModuleFilePath(folderName: string, moduleType: 'service' | 'controller') {
         const candidates = [
-            path.join(this.options.modulesDir, folderName, `${moduleType}.ts`),
             path.join(this.options.modulesDir, folderName, `${moduleType}.js`)
         ];
 
