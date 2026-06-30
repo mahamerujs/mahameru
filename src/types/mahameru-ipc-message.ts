@@ -5,7 +5,6 @@ export interface MahameruIPCChildDataMap {
     RESTART: undefined;
     SHUTDOWN: { gracePeriod: number } | undefined;
     DEV_HRM: { changedFile?: string }
-    GENERATE_ROUTE_TYPES: undefined;
 }
 
 export type MahameruIPCChildMessageTypes = keyof MahameruIPCChildDataMap;
@@ -20,7 +19,6 @@ export type MahameruIPCMessageChild<K extends MahameruIPCChildMessageTypes = Mah
 
 export interface MahameruIPCServerDataMap {
     SHUTDOWN_DONE: undefined;
-    GENERATE_ROUTE_TYPES_DONE: undefined;
     ERROR: { message: string; stack?: string; code?: string };
     READY: { port: number; host: string; pid: number };
     LOG: string;

@@ -1,42 +1,32 @@
 import { Mahameru } from "./mahameru";
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { readFile } from 'node:fs/promises';
 import { MahameruIPCMessageServer } from './types';
 import { MahameruServerError } from "./mahameru-server-error";
-import { type Config, type MahameruConfig, mahameruDefaultBaseConfig, mahameruDefaultConfig, type MahameruExtendedConfig } from "./config";
+import { mahameruDefaultBaseConfig, mahameruDefaultConfig, type MahameruExtendedConfig, type Config, type MahameruConfig } from "./config";
 
 let startUsage = process.cpuUsage();
 let startTime = process.hrtime.bigint();
 let app: Mahameru | null = null;
 
-const runtimeRequire = createRequire(__filename);
-
 (async () => {
     try {
-        const env = ensureServerEnvironment()
-        let configFilePath
-
-        if (env.dev) {
-            configFilePath = join(env.ROOT_PATH, 'mahameru.config.ts');
-        } else {
-            configFilePath = join(env.ROOT_PATH, mahameruDefaultBaseConfig.productionDir, '.mahameru.config.json');
-        }
-
-        const config = await loadConfig(configFilePath);
+        const { ROOT_PATH, SEND_PROCESS_USAGE_INTERVAL, dev, host, port } = ensureServerEnvironment()
 
         const extendedConfig: MahameruExtendedConfig = {
             ...mahameruDefaultBaseConfig,
             ...mahameruDefaultConfig,
-            ...config
+            rootPath: ROOT_PATH,
+            appPath: !dev ? ROOT_PATH : mahameruDefaultBaseConfig.appPath,
+            port: port ?? mahameruDefaultConfig.port,
+            host: host ?? mahameruDefaultConfig.host
         }
 
         app = new Mahameru(extendedConfig);
 
         sendProcessUsage()
 
-        setInterval(sendProcessUsage, env.SEND_PROCESS_USAGE_INTERVAL || 5000)
+        setInterval(sendProcessUsage, SEND_PROCESS_USAGE_INTERVAL || 5000)
 
         await app.initialize();
 
@@ -61,16 +51,12 @@ const runtimeRequire = createRequire(__filename);
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
     } catch (error) {
-        if (process.send) {
-            const newError = error as Error;
+        console.error(error);
 
+        if (process.send) {
             process.send({
                 type: 'ERROR',
-                data: {
-                    message: newError?.message,
-                    code: newError?.cause,
-                    stack: newError?.stack
-                }
+                data: error
             } as MahameruIPCMessageServer);
 
             setTimeout(() => {
@@ -126,32 +112,6 @@ function ensureServerEnvironment() {
         configFilePath,
         SEND_PROCESS_USAGE_INTERVAL
     }
-}
-
-async function loadConfig(configFilePath: string): Promise<Partial<MahameruConfig>> {
-    const resolvedPath = resolve(configFilePath);
-
-    if (configFilePath.endsWith('.json')) {
-        try {
-            return await readFile(resolvedPath, 'utf-8') as Partial<MahameruConfig>;
-        } catch (error) {
-            console.warn(`Unable to load config file "${configFilePath}". So we will ignore it.`);
-
-            return {};
-        }
-    }
-
-    const module = runtimeRequire(resolvedPath);
-
-    if (!module.default)
-        return {};
-
-    if (typeof module.default !== 'function')
-        return {};
-
-    const configFunction = module.default as Config;
-
-    return await configFunction(mahameruDefaultConfig);
 }
 
 async function sendProcessUsage() {

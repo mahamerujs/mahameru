@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import type { DataSource } from 'typeorm';
 import { MahameruContainerError } from './mahameru-container-error';
 
 const runtimeRequire = createRequire(__filename);
@@ -8,6 +9,7 @@ const runtimeRequire = createRequire(__filename);
 export type ClassConstructor<T = any> = new (...args: any[]) => T;
 export type MahameruContainerOptions = {
     modulesDir: string
+    dataSources: Record<string, DataSource>
 }
 
 export class MahameruContainer {
@@ -56,7 +58,11 @@ export class MahameruContainer {
                     const module = this.loadModule(servicePath, moduleCache);
                     const ServiceClass = this.getExportedClass(module, servicePath);
 
-                    this.register(ServiceClass, new ServiceClass());
+                    const serviceInstance = Object.keys(this.options.dataSources).length > 0
+                        ? new ServiceClass(this.options.dataSources)
+                        : new ServiceClass();
+
+                    this.register(ServiceClass, serviceInstance);
                 }
             }
         }

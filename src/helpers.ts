@@ -10,7 +10,7 @@ const matchRoutePattern = (currentPath: string, routePattern: string): boolean =
     return regex.test(currentPath);
 };
 
-export const validateProtectedRoute = (protectedRoutes: ProtectedRoute<any>, method: string, path: string): boolean => {
+export const validateProtectedRoute = (protectedRoutes: ProtectedRoute, method: string, path: string): boolean => {
     return protectedRoutes.some(route => {
         if (typeof route === 'string')
             return matchRoutePattern(path, route);
