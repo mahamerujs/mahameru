@@ -8,8 +8,8 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsup src --format cjs,esm --dts --watch --no-splitting",
-    "build": "tsup src --format cjs,esm --dts --clean --no-splitting",
+    "dev": "tsup --config tsup.dev.config.ts",
+    "build": "tsup --config tsup.build.config.ts",
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "clean": "rimraf dist",
     "build:tsc": "tsc --project tsconfig.json",
