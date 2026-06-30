@@ -11,7 +11,7 @@ import { MahameruResponse } from './mahameru-response';
 import { MahameruError } from './mahameru-error';
 
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
-import type { MahameruConfig, MahameruExtendedConfig } from './config';
+import type { MahameruExtendedConfig } from './config';
 import { MahameruContainer } from './mahameru-container';
 
 const runtimeRequire = createRequire(__filename);
