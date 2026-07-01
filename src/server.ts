@@ -16,6 +16,7 @@ let app: Mahameru | null = null;
         const extendedConfig: MahameruExtendedConfig = {
             ...mahameruDefaultBaseConfig,
             ...mahameruDefaultConfig,
+            dev,
             rootPath: ROOT_PATH,
             appPath: !dev ? ROOT_PATH : mahameruDefaultBaseConfig.appPath,
             port: port ?? mahameruDefaultConfig.port,

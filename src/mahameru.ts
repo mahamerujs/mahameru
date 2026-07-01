@@ -519,7 +519,7 @@ export class Mahameru {
     }
 
     protected async generateDataSourcesTypes() {
-        if (this.isInit)
+        if (this.isInit || !this.config.dev)
             return
 
         const lines = Object.keys(this.dataSources).map((name) => `    ${name}: DataSource;`);
@@ -539,7 +539,7 @@ export class Mahameru {
     }
 
     protected async generateRouteTypes() {
-        if (this.isInit)
+        if (this.isInit || !this.config.dev)
             return
 
         const foundPaths: string[] = [];
@@ -578,7 +578,7 @@ export class Mahameru {
     }
 
     protected async generateMahameruDTSFile(typeIndexFile: string) {
-        if (!existsSync(typeIndexFile))
+        if (!existsSync(typeIndexFile) || !this.config.dev)
             return;
 
         const toRelative = (path: string) => path.replace(process.cwd(), '.').replace(/\\/g, '/');
@@ -593,6 +593,9 @@ export class Mahameru {
 
     protected async generateBarrelIndexFile(targetDir: string) {
         try {
+            if (!existsSync(targetDir) || !this.config.dev)
+                return
+
             const items = await readdir(targetDir);
 
             const exportLinesPromises = items.map(async (item) => {

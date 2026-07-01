@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 export interface MahameruBaseConfig {
+    dev: boolean;
     rootPath: string;
     appPath: string;
     productionDir: string;
@@ -55,6 +56,7 @@ export interface MahameruConfig {
 export type MahameruExtendedConfig = MahameruBaseConfig & MahameruConfig;
 
 export const mahameruDefaultBaseConfig: MahameruBaseConfig = {
+    dev: process.env.MAHAMERU__MODE?.trim() === 'development',
     rootPath: process.cwd(),
     get appPath(): string {
         return join(this.rootPath, this.developmentDir)
