@@ -1,4 +1,5 @@
-import { existsSync, readdirSync } from 'node:fs';
+import "reflect-metadata";
+import { existsSync } from 'node:fs';
 import { dirname, join, parse, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
@@ -12,7 +13,7 @@ import { MahameruError } from './mahameru-error';
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
 import type { Config, MahameruConfig, MahameruExtendedConfig } from './config';
 import { MahameruContainer } from './mahameru-container';
-import type { TypeOrmDataSource } from './types/typeorm';
+import type { DataSource } from 'typeorm';
 
 const runtimeRequire = createRequire(__filename);
 
@@ -100,7 +101,7 @@ export class Mahameru {
     protected handleOnHttpClose?: () => void;
     protected container: MahameruContainer;
     protected config: MahameruExtendedConfig;
-    protected dataSources: Record<string, TypeOrmDataSource> = {};
+    protected dataSources: Record<string, DataSource> = {};
     protected dynamicTypePaths: string[] = [];
 
     constructor(
@@ -693,7 +694,7 @@ export class Mahameru {
                     continue
 
                 const module = this.loadModule(filePath);
-                const dataSource = this.unwrapDefaultExport<TypeOrmDataSource>(module);
+                const dataSource = this.unwrapDefaultExport<DataSource>(module);
 
                 if (!("options" in dataSource))
                     continue;

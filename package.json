@@ -7,6 +7,20 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.js"
+    },
+    "./typeorm": {
+      "types": "./dist/typeorm/index.d.ts",
+      "require": "./dist/typeorm/index.js",
+      "import": "./dist/typeorm/index.mjs",
+      "default": "./dist/typeorm/index.js"
+    }
+  },
   "scripts": {
     "dev": "tsup --config tsup.dev.config.ts",
     "build": "tsup --config tsup.build.config.ts",
@@ -36,7 +50,11 @@
     "@swc/core": "^1.15.43",
     "@types/node": "^26.0.1",
     "tsup": "^8.5.1",
-    "typeorm": "^1.0.0",
+    "type-fest": "^5.7.0",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^1.0.0"
   }
 }
