@@ -87,6 +87,7 @@ export interface PreInitContext {
 export type PreInitHandler = (context: PreInitContext) => Promise<void>;
 
 export class Mahameru {
+    protected isInit = true;
     protected _initialized = false;
     protected routeRegistry: RouteItem[] = [];
     protected protectedRoutes: ProtectedRoute = [];
@@ -162,6 +163,8 @@ export class Mahameru {
 
                         process.send(payload);
                     }
+
+                    this.isInit = false
 
                     resolve(true)
                 })
@@ -515,6 +518,9 @@ export class Mahameru {
     }
 
     protected async generateDataSourcesTypes() {
+        if (this.isInit)
+            return
+
         const lines = Object.keys(this.dataSources).map((name) => `    ${name}: DataSource;`);
         const hasDataSources = lines.length > 0;
         const dataSourceTemplate = hasDataSources
@@ -532,6 +538,9 @@ export class Mahameru {
     }
 
     protected async generateRouteTypes() {
+        if (this.isInit)
+            return
+
         const foundPaths: string[] = [];
         const routesPath = join(this.config.appPath, this.config.routesDir);
 
@@ -603,6 +612,9 @@ export class Mahameru {
             const exportLines = (await Promise.all(exportLinesPromises))
                 .filter((line): line is string => line !== null);
 
+            if (exportLines.length === 0)
+                return
+
             const fileContent = exportLines.join('\n') + '\n';
 
             const outputPath = join(targetDir, 'index.d.ts');
@@ -661,10 +673,8 @@ export class Mahameru {
 
         const dataSourcePath = join(this.config.appPath, 'databases');
 
-        if (!existsSync(dataSourcePath)) {
-            await this.generateDataSourcesTypes()
+        if (!existsSync(dataSourcePath))
             return;
-        }
 
         const databaseDirs = await readdir(dataSourcePath, { withFileTypes: true });
 
