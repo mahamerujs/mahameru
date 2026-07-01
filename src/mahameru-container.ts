@@ -1,15 +1,15 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import type { DataSource } from 'typeorm';
 import { MahameruContainerError } from './mahameru-container-error';
+import type { TypeOrmDataSource } from './types/typeorm';
 
 const runtimeRequire = createRequire(__filename);
 
 export type ClassConstructor<T = any> = new (...args: any[]) => T;
 export type MahameruContainerOptions = {
     modulesDir: string
-    dataSources: Record<string, DataSource>
+    dataSources: Record<string, TypeOrmDataSource>
 }
 
 export class MahameruContainer {

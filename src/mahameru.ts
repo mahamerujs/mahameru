@@ -9,10 +9,10 @@ import { MahameruHttpServerError } from './mahameru-http-server-error';
 import { MahameruRequest } from './mahameru-request';
 import { MahameruResponse } from './mahameru-response';
 import { MahameruError } from './mahameru-error';
-import type { DataSource } from 'typeorm'
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
 import type { Config, MahameruConfig, MahameruExtendedConfig } from './config';
 import { MahameruContainer } from './mahameru-container';
+import type { TypeOrmDataSource } from './types/typeorm';
 
 const runtimeRequire = createRequire(__filename);
 
@@ -100,7 +100,7 @@ export class Mahameru {
     protected handleOnHttpClose?: () => void;
     protected container: MahameruContainer;
     protected config: MahameruExtendedConfig;
-    protected dataSources: Record<string, DataSource> = {};
+    protected dataSources: Record<string, TypeOrmDataSource> = {};
     protected dynamicTypePaths: string[] = [];
 
     constructor(
@@ -693,7 +693,7 @@ export class Mahameru {
                     continue
 
                 const module = this.loadModule(filePath);
-                const dataSource = this.unwrapDefaultExport<DataSource>(module);
+                const dataSource = this.unwrapDefaultExport<TypeOrmDataSource>(module);
 
                 if (!("options" in dataSource))
                     continue;
