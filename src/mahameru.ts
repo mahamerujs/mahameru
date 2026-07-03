@@ -281,6 +281,7 @@ export class Mahameru {
 
                 if (!this.config.disableHttpSignatureResponse) {
                     responseHeader.append('X-Powered-By', this.config.httpServerSignature);
+                    responseHeader.append('X-Message', 'Indonesia Bisa!')
                 }
 
                 response.setHeaders(responseHeader);
