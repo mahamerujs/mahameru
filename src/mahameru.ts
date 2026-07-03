@@ -41,6 +41,7 @@ export interface MahameruMiddlewareContext {
     params: Record<string, string>;
     path: string;
     method: string;
+    status: number;
 }
 
 export type MahameruNext = () => Promise<MahameruResponse>;
@@ -273,7 +274,8 @@ export class Mahameru {
                 request: mahameruRequest,
                 container: this.container,
                 path: rawReqUrl,
-                method
+                method,
+                status: 200
             };
 
             try {
@@ -312,11 +314,16 @@ export class Mahameru {
 
                 if (!matchedRoute) {
                     const notFoundResponse = await this.runNotFoundHandler(mahameruRequest, method, matchUrl);
-
-                    return this.sendResponse(response, responseHeader, notFoundResponse ?? MahameruResponse.json(
+                    const routeHandler: MahameruNext = async () => notFoundResponse ?? MahameruResponse.json(
                         { error: 'Not Found' },
                         { status: 404 }
-                    ));
+                    )
+
+                    const mahameruResponse = this.middleware ?
+                        await this.middleware({ request: mahameruRequest, container: this.container, method, params: {}, path: rawReqUrl, status: 404 }, false, routeHandler) :
+                        await routeHandler()
+
+                    return this.sendResponse(response, responseHeader, mahameruResponse);
                 }
 
                 let handler: RouteHandler;
@@ -396,7 +403,8 @@ export class Mahameru {
                             container: this.container,
                             params,
                             path: rawReqUrl,
-                            method
+                            method,
+                            status: 200
                         },
                         () => handler(mahameruRequest, this.container, { params })
                     )
