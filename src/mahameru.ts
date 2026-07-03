@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { existsSync } from 'node:fs';
-import { dirname, join, parse, relative, resolve } from 'node:path';
+import { basename, dirname, join, parse, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
@@ -89,6 +89,7 @@ export type PreInitHandler = (context: PreInitContext) => Promise<void>;
 
 export class Mahameru {
     protected isInit = true;
+    protected isStandalone = false;
     protected _initialized = false;
     protected routeRegistry: RouteItem[] = [];
     protected protectedRoutes: ProtectedRoute = [];
@@ -108,6 +109,18 @@ export class Mahameru {
         config: MahameruExtendedConfig
     ) {
         this.config = config
+
+        if (!process.send)
+            this.isStandalone = true
+
+        if (this.isStandalone) {
+            if (!require.main)
+                throw new MahameruError('Cannot get entry point of app!')
+
+            this.config.developmentDir = basename(require.main.path)
+            this.config.appPath = require.main.path
+        }
+
         this.container = new MahameruContainer({
             modulesDir: join(this.config.appPath, this.config.modulesDir),
             dataSources: this.dataSources
@@ -166,6 +179,11 @@ export class Mahameru {
                     }
 
                     this.isInit = false
+
+                    if (this.isStandalone) {
+                        console.clear();
+                        console.log(`\x1b[36m▲ Mahameru\x1b[39m ready\n\nHost: ${this.config.host}\nport: ${this.config.port}\n`)
+                    }
 
                     resolve(true)
                 })
@@ -460,7 +478,7 @@ export class Mahameru {
 
     protected async scanRoutes(baseDir: string, currentDir: string = baseDir) {
         if (!existsSync(currentDir))
-            throw new MahameruError(`Route directory "${currentDir}" does not exist.`);
+            return;
 
         await this.generateRouteTypes();
 

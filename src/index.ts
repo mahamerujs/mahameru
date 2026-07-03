@@ -1,3 +1,5 @@
+import { mahameru } from './standalone';
+
 export * from './config';
 export * from './mahameru-container-error';
 export * from './mahameru-container';
@@ -8,3 +10,5 @@ export * from './mahameru-response';
 export * from './mahameru-server-error';
 export * from './types'
 export * from './mahameru';
+
+export default mahameru;
