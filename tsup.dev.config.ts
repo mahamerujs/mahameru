@@ -23,6 +23,7 @@ export default defineConfig({
 
             await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2));
             await copyFile('README.md', 'dist/README.md');
+            await copyFile('src/favicon.ico', 'dist/favicon.ico');
         } catch (error) {
             console.error(error);
         }

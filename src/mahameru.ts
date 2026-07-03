@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { basename, dirname, join, parse, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
-import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
 import { MahameruContainer } from './mahameru-container';
 import { MahameruHttpServerError } from './mahameru-http-server-error';
@@ -287,6 +287,27 @@ export class Mahameru {
                 }
 
                 response.setHeaders(responseHeader);
+
+                if (request.url === '/favicon.ico') {
+                    const faviconPath = join(__dirname, 'favicon.ico');
+
+                    if (!(await exists(faviconPath))) {
+                        response.writeHead(404, { 'Content-Type': 'text/plain' });
+                        response.end('Not Found');
+
+                        return;
+                    }
+
+                    const favicon = await readFile(faviconPath);
+
+                    if (this.middleware)
+                        await this.middleware({ request: mahameruRequest, container: this.container, method, params: {}, path: rawReqUrl, status: 200 }, false, async () => new MahameruResponse({}));
+
+                    response.writeHead(200, { 'Content-Type': 'image/x-icon' });
+                    response.end(favicon);
+
+                    return;
+                }
 
                 if (
                     request.headers.origin &&
