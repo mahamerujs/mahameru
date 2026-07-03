@@ -1,3 +1,4 @@
+import { access, constants } from "node:fs/promises";
 import type { HTTPMethod, ProtectedRoute } from "./mahameru";
 
 const matchRoutePattern = (currentPath: string, routePattern: string): boolean => {
@@ -20,4 +21,14 @@ export const validateProtectedRoute = (protectedRoutes: ProtectedRoute, method: 
 
         return isPathMatch && isMethodMatch;
     });
+}
+
+export const exists = async (target: string): Promise<boolean> => {
+    try {
+        const result = await access(target, constants.R_OK);
+
+        return true;
+    } catch (error) {
+        return false;
+    }
 }

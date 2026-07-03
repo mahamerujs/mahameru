@@ -1,18 +1,18 @@
 import "reflect-metadata";
-import { existsSync } from 'node:fs';
 import { basename, dirname, join, parse, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 
-import { validateProtectedRoute } from './helpers';
+import { MahameruContainer } from './mahameru-container';
 import { MahameruHttpServerError } from './mahameru-http-server-error';
 import { MahameruRequest } from './mahameru-request';
 import { MahameruResponse } from './mahameru-response';
 import { MahameruError } from './mahameru-error';
+import { exists, validateProtectedRoute } from './helpers';
+
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
 import type { Config, MahameruConfig, MahameruExtendedConfig } from './config';
-import { MahameruContainer } from './mahameru-container';
 import type { DataSource } from 'typeorm';
 
 const runtimeRequire = createRequire(__filename);
@@ -486,7 +486,7 @@ export class Mahameru {
     }
 
     protected async scanRoutes(baseDir: string, currentDir: string = baseDir) {
-        if (!existsSync(currentDir))
+        if (!(await exists(currentDir)))
             return;
 
         await this.generateRouteTypes();
@@ -573,7 +573,7 @@ export class Mahameru {
         const routesPath = join(this.config.appPath, this.config.routesDir);
 
         async function scan(dir: string, currentRoute = '') {
-            if (!existsSync(dir))
+            if (!(await exists(dir)))
                 return;
 
             const files = await readdir(dir);
@@ -605,7 +605,7 @@ export class Mahameru {
     }
 
     protected async generateMahameruDTSFile(typeIndexFile: string) {
-        if (!existsSync(typeIndexFile) || !this.config.dev)
+        if (!(await exists(typeIndexFile)) || !this.config.dev)
             return;
 
         const toRelative = (path: string) => path.replace(process.cwd(), '.').replace(/\\/g, '/');
@@ -620,7 +620,7 @@ export class Mahameru {
 
     protected async generateBarrelIndexFile(targetDir: string) {
         try {
-            if (!existsSync(targetDir) || !this.config.dev)
+            if (!(await exists(targetDir)) || !this.config.dev)
                 return
 
             const items = await readdir(targetDir);
@@ -660,7 +660,7 @@ export class Mahameru {
     protected async loadConfig() {
         const configFilePath = join(this.config.appPath, 'mahameru.config.js');
 
-        if (!existsSync(configFilePath))
+        if (!(await exists(configFilePath)))
             return {}
 
         const module = this.loadModule(configFilePath);
@@ -685,16 +685,16 @@ export class Mahameru {
         }
     }
 
-    protected loadEnvironmentVariables() {
+    protected async loadEnvironmentVariables() {
         const defaultEnvFilePath = join(this.config.rootPath, '.env');
         const MAHAMERU__MODE = process.env.MAHAMERU__MODE === "development" ? "development" : "production";
         const envFilePath = join(this.config.rootPath, `.env.${MAHAMERU__MODE}`);
 
-        if (existsSync(defaultEnvFilePath)) {
+        if (await exists(defaultEnvFilePath)) {
             process.loadEnvFile(defaultEnvFilePath)
         }
 
-        if (existsSync(envFilePath)) {
+        if (await exists(envFilePath)) {
             process.loadEnvFile(envFilePath)
         }
     }
@@ -704,7 +704,7 @@ export class Mahameru {
 
         const dataSourcePath = join(this.config.appPath, 'databases');
 
-        if (!existsSync(dataSourcePath))
+        if (!(await exists(dataSourcePath)))
             return;
 
         const databaseDirs = await readdir(dataSourcePath, { withFileTypes: true });
@@ -763,7 +763,7 @@ export class Mahameru {
     protected async loadPreInitHandler(appPath: string) {
         const preInitPath = join(appPath, 'pre-init.js');
 
-        if (!existsSync(preInitPath)) {
+        if (!(await exists(preInitPath))) {
             this.preInitHandler = undefined;
 
             return;
@@ -781,7 +781,7 @@ export class Mahameru {
     protected async loadMiddleware(appPath: string) {
         const middlewarePath = join(appPath, 'middleware.js');
 
-        if (!existsSync(middlewarePath)) {
+        if (!(await exists(middlewarePath))) {
             this.middleware = undefined;
             return;
         }
@@ -805,7 +805,7 @@ export class Mahameru {
     protected async loadErrorHandler(appPath: string) {
         const errorHandlerPath = join(appPath, 'error.js');
 
-        if (!existsSync(errorHandlerPath)) {
+        if (!(await exists(errorHandlerPath))) {
             this.errorHandler = undefined;
 
             return;
@@ -826,8 +826,9 @@ export class Mahameru {
     protected async loadNotFoundHandler(appPath: string) {
         const notFoundHandlerPath = join(appPath, 'routes', 'not-found.js');
 
-        if (!existsSync(notFoundHandlerPath)) {
+        if (!(await exists(notFoundHandlerPath))) {
             this.notFoundHandler = undefined;
+
             return;
         }
 
@@ -1034,7 +1035,7 @@ export class Mahameru {
     }
 
     protected async reloadRuntimeState() {
-        this.loadEnvironmentVariables();
+        await this.loadEnvironmentVariables();
         await this.resetRuntimeState();
 
         await this.loadDatabases();

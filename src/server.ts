@@ -1,9 +1,9 @@
 import { Mahameru } from "./mahameru";
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
 import { MahameruIPCMessageServer } from './types';
 import { MahameruServerError } from "./mahameru-server-error";
 import { mahameruDefaultBaseConfig, mahameruDefaultConfig, type MahameruExtendedConfig, type Config, type MahameruConfig } from "./config";
+import { exists } from "./helpers";
 
 let startUsage = process.cpuUsage();
 let startTime = process.hrtime.bigint();
@@ -11,7 +11,7 @@ let app: Mahameru | null = null;
 
 (async () => {
     try {
-        const { ROOT_PATH, SEND_PROCESS_USAGE_INTERVAL, dev, host, port } = ensureServerEnvironment()
+        const { ROOT_PATH, SEND_PROCESS_USAGE_INTERVAL, dev, host, port } = await ensureServerEnvironment()
 
         const extendedConfig: MahameruExtendedConfig = {
             ...mahameruDefaultBaseConfig,
@@ -80,7 +80,7 @@ let app: Mahameru | null = null;
     }
 })()
 
-function ensureServerEnvironment() {
+async function ensureServerEnvironment() {
     const dev = process.env.MAHAMERU__MODE?.trim() === 'development';
     const port = process.env.MAHAMERU__HTTP_LISTEN_PORT ? parseInt(process.env.MAHAMERU__HTTP_LISTEN_PORT.trim()) : undefined;
     const host = process.env.MAHAMERU__HTTP_LISTEN_HOST?.trim()
@@ -97,10 +97,10 @@ function ensureServerEnvironment() {
         configFilePath = join(ROOT_PATH, CONFIG_FILE);
         const packageJsonPath = join(ROOT_PATH, 'package.json');
 
-        if (!existsSync(packageJsonPath))
+        if (!(await exists(packageJsonPath)))
             throw new MahameruServerError('Current directory is not a Node.js project. Cannot find package.json file.');
 
-        if (!existsSync(configFilePath))
+        if (!(await exists(configFilePath)))
             configFilePath = null;
     }
 

@@ -1,8 +1,9 @@
-import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { MahameruContainerError } from './mahameru-container-error';
 import type { DataSource } from 'typeorm';
+import { exists } from './helpers';
+import { readdir } from 'node:fs/promises';
 
 const runtimeRequire = createRequire(__filename);
 
@@ -44,15 +45,15 @@ export class MahameruContainer {
     }
 
     async discover() {
-        if (!existsSync(this.options.modulesDir))
+        if (!(await exists(this.options.modulesDir)))
             return;
 
-        const folders = readdirSync(this.options.modulesDir, { withFileTypes: true });
+        const folders = await readdir(this.options.modulesDir, { withFileTypes: true });
         const moduleCache = new Map<string, Record<string, unknown>>();
 
         for (const folder of folders) {
             if (folder.isDirectory()) {
-                const servicePath = this.resolveModuleFilePath(folder.name, 'service');
+                const servicePath = await this.resolveModuleFilePath(folder.name, 'service');
 
                 if (servicePath) {
                     const module = this.loadModule(servicePath, moduleCache);
@@ -69,8 +70,8 @@ export class MahameruContainer {
 
         for (const folder of folders) {
             if (folder.isDirectory()) {
-                const controllerPath = this.resolveModuleFilePath(folder.name, 'controller');
-                const servicePath = this.resolveModuleFilePath(folder.name, 'service');
+                const controllerPath = await this.resolveModuleFilePath(folder.name, 'controller');
+                const servicePath = await this.resolveModuleFilePath(folder.name, 'service');
 
                 if (controllerPath) {
                     const controllerModule = this.loadModule(controllerPath, moduleCache);
@@ -107,13 +108,13 @@ export class MahameruContainer {
         return loadedModule;
     }
 
-    private resolveModuleFilePath(folderName: string, moduleType: 'service' | 'controller') {
+    private async resolveModuleFilePath(folderName: string, moduleType: 'service' | 'controller') {
         const candidates = [
             path.join(this.options.modulesDir, folderName, `${moduleType}.js`)
         ];
 
         for (const candidate of candidates)
-            if (existsSync(candidate))
+            if (await exists(candidate))
                 return candidate;
 
         return null;
