@@ -8,6 +8,9 @@ export class MahameruContainerError extends Error {
         this.path = path;
         this.moduleName = moduleName;
 
-        Error.captureStackTrace(this, MahameruContainerError);
+        Object.setPrototypeOf(this, MahameruContainerError.prototype);
+
+        if (Error.captureStackTrace)
+            Error.captureStackTrace(this, MahameruContainerError);
     }
 }

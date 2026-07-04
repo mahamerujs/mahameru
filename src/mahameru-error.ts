@@ -4,6 +4,9 @@ export class MahameruError extends Error {
         this.name = 'MahameruError';
         this.message = message;
 
-        Error.captureStackTrace(this, this.constructor);
+        Object.setPrototypeOf(this, MahameruError.prototype);
+
+        if (Error.captureStackTrace)
+            Error.captureStackTrace(this, MahameruError);
     }
 }

@@ -3,6 +3,9 @@ export class MahameruServerError extends Error {
         super(message);
         this.name = 'MahameruServerError';
 
-        Error.captureStackTrace(this, MahameruServerError);
+        Object.setPrototypeOf(this, MahameruServerError.prototype);
+
+        if (Error.captureStackTrace)
+            Error.captureStackTrace(this, MahameruServerError);
     }
 }
