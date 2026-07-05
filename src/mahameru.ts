@@ -206,11 +206,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
             return;
         }
 
-        console.log('Graceful Shutting down...');
-
-        await this.closeHttpServer()
-
-        console.log(`Graceful Shutting down... Done`);
+        await this.closeHttpServer();
     }
 
     protected closeHttpServer() {
