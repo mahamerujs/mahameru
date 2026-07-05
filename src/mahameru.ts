@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { basename, dirname, join, parse, relative, resolve } from 'node:path';
+import { dirname, join, parse, relative, resolve } from 'node:path';
 import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
@@ -11,9 +11,9 @@ import { MahameruResponse } from './mahameru-response';
 import { MahameruError } from './mahameru-error';
 import { exists, validateProtectedRoute } from './helpers';
 
-import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from './types/mahameru-ipc-message'
 import type { Config, MahameruConfig, MahameruExtendedConfig } from './config';
 import type { DataSource } from 'typeorm';
+import { EventEmitter } from "./event-emitter";
 
 const runtimeRequire = createRequire(__filename);
 
@@ -88,7 +88,11 @@ export interface PreInitContext {
 
 export type PreInitHandler = (context: PreInitContext) => Promise<void>;
 
-export class Mahameru {
+export type MahameruEvents = {
+    ready: [data: { mode: "development" | "production"; port: number; host: string; }];
+};
+
+export class Mahameru extends EventEmitter<MahameruEvents> {
     protected isInit = true;
     protected isStandalone = false;
     protected _initialized = false;
@@ -109,18 +113,8 @@ export class Mahameru {
     constructor(
         config: MahameruExtendedConfig
     ) {
+        super();
         this.config = config
-
-        if (!process.send)
-            this.isStandalone = true
-
-        if (this.isStandalone) {
-            if (!require.main)
-                throw new MahameruError('Cannot get entry point of app!')
-
-            this.config.developmentDir = basename(require.main.path)
-            this.config.appPath = require.main.path
-        }
 
         this.container = new MahameruContainer({
             modulesDir: join(this.config.appPath, this.config.modulesDir),
@@ -147,7 +141,7 @@ export class Mahameru {
     /**
      * Initialize the Mahameru server.
      */
-    async initialize(): Promise<boolean> {
+    async initialize(): Promise<void> {
         await this.reloadRuntimeState();
 
         if (this.httpServer?.listening)
@@ -164,29 +158,11 @@ export class Mahameru {
                 .on('listening', () => {
                     this._initialized = true;
 
-                    this.setupIpcListener();
-
-                    if (process.send) {
-                        const payload: MahameruIPCMessageServer = {
-                            type: 'READY',
-                            data: {
-                                pid: process.pid,
-                                host: this.config.host,
-                                port: this.config.port
-                            }
-                        };
-
-                        process.send(payload);
-                    }
+                    this.emit('ready', { mode: this.developmentMode ? 'development' : 'production', port: this.config.port, host: this.config.host });
 
                     this.isInit = false
 
-                    if (this.isStandalone) {
-                        console.clear();
-                        console.log(`\x1b[36m▲ Mahameru\x1b[39m ready\n\nHost: ${this.config.host}\nport: ${this.config.port}\n`)
-                    }
-
-                    resolve(true)
+                    resolve()
                 })
                 .on('error', (error) => {
                     if (error instanceof Error) {
@@ -450,62 +426,6 @@ export class Mahameru {
         });
     }
 
-    protected setupIpcListener(): void {
-        if (!process.send)
-            return;
-
-        process.on('message', async (message: MahameruIPCMessageChild) => {
-            try {
-                await this.handleParentMessage(message);
-            } catch (error) {
-                console.error('Mahameru IPC Error:', error);
-            }
-        });
-    }
-
-    protected async handleParentMessage(message: MahameruIPCMessageChild): Promise<void> {
-        if (typeof message !== 'object' || !("type" in message) || typeof message.type !== 'string' || !process.send)
-            return
-
-        switch (message.type) {
-            case 'DEV_HRM':
-                await this.devHRM(message.data.changedFile);
-
-                break;
-
-            case 'RELOAD':
-                this.log('Reloading runtime state...');
-
-                await this.reloadRuntimeState();
-
-                this.log(`Reloading runtime state... Done`);
-
-                break;
-
-            case 'RESTART':
-                this.log('Restarting server...');
-
-                await this.close();
-                await this.initialize();
-
-                this.log(`Restarting server... Done`);
-
-                break;
-
-            case 'SHUTDOWN':
-                await this.close();
-
-                process.send({ type: 'SHUTDOWN_DONE' } as MahameruIPCMessageServer);
-
-                return;
-
-            default:
-                process.send({ type: 'ERROR', data: { message: `Unknown message type: ${(message as any).type}` } } as MahameruIPCMessageServer);
-
-                break;
-        }
-    }
-
     protected async scanRoutes(baseDir: string, currentDir: string = baseDir) {
         if (!(await exists(currentDir)))
             return;
@@ -619,7 +539,7 @@ export class Mahameru {
 
         const routeUnion = foundPaths.map(p => `'${p}'`).join(' | ') || 'string';
         const template = `// Do not edit this file, it is generated by MahameruJS\n\nimport { RouteObject } from 'mahameru';\n\ntype MahameruGeneratedRoutes = ${routeUnion};\n\ndeclare module 'mahameru' {\n\texport interface RegisterRoutes {\n\t\troutes: MahameruGeneratedRoutes | RouteObject<MahameruGeneratedRoutes>;\n\t}\n}\n`;
-        const outputPath = join(process.cwd(), '.mahameru/types/routes.d.ts');
+        const outputPath = join(this.config.rootPath, '.mahameru/types/routes.d.ts');
 
         await mkdir(dirname(outputPath), { recursive: true });
         await writeFile(outputPath, template.trim(), 'utf-8');
@@ -629,13 +549,13 @@ export class Mahameru {
         if (!(await exists(typeIndexFile)) || !this.config.dev)
             return;
 
-        const toRelative = (path: string) => path.replace(process.cwd(), '.').replace(/\\/g, '/');
+        const toRelative = (path: string) => path.replace(this.config.rootPath, '.').replace(/\\/g, '/');
         const dTSContents = `/// <reference path="${toRelative(typeIndexFile)}" />
 
 // Do not edit this file, it is generated by MahameruJS
 `
 
-        const dTSfile = join(process.cwd(), 'mahameru.d.ts');
+        const dTSfile = join(this.config.rootPath, 'mahameru.d.ts');
         await writeFile(dTSfile, dTSContents, 'utf-8');
     }
 
@@ -1055,7 +975,7 @@ export class Mahameru {
         return freshHandlers[method];
     }
 
-    protected async reloadRuntimeState() {
+    async reloadRuntimeState() {
         await this.loadEnvironmentVariables();
         await this.resetRuntimeState();
 

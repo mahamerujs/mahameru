@@ -18,6 +18,7 @@ export type MahameruIPCMessageChild<K extends MahameruIPCChildMessageTypes = Mah
 }[K];
 
 export interface MahameruIPCServerDataMap {
+    STARTED: undefined;
     SHUTDOWN_DONE: undefined;
     ERROR: { message: string; stack?: string; code?: string };
     READY: { port: number; host: string; pid: number };
