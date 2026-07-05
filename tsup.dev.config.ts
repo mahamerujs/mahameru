@@ -33,7 +33,9 @@ export default defineConfig({
             const packageJson = JSON.parse(packageJsonString);
             packageJson.main = './index.js';
             packageJson.types = './index.d.ts';
-            packageJson.scripts = {};
+            packageJson.scripts = {
+                preinstall: 'node ./cli/scripts/preinstall.js'
+            };
             delete packageJson.files;
 
             replaceDist(packageJson.exports);
