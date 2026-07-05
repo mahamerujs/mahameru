@@ -279,7 +279,10 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
                     if (this.middleware)
                         await this.middleware({ request: mahameruRequest, container: this.container, method, params: {}, path: rawReqUrl, status: 200 }, false, async () => new MahameruResponse({}));
 
-                    response.writeHead(200, { 'Content-Type': 'image/x-icon' });
+                    response.writeHead(200, {
+                        'Content-Type': 'image/x-icon',
+                        'Cache-Control': 'public, max-age=31536000',
+                    });
                     response.end(favicon);
 
                     return;
