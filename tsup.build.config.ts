@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, readFile, writeFile } from 'node:fs/promises';
 import { defineConfig } from 'tsup'
 import { PackageJson } from 'type-fest'
 
@@ -16,6 +16,29 @@ const replaceDist = (obj: any) => {
     }
 };
 
+const onSuccess = async () => {
+    const packageJsonString = await readFile('package.json', 'utf-8');
+
+    try {
+        const packageJson = JSON.parse(packageJsonString) as PackageJson;
+        packageJson.main = './index.js';
+        packageJson.types = './index.d.ts';
+        packageJson.scripts = {
+            preinstall: 'node ./scripts/preinstall.js'
+        };
+        delete packageJson.files;
+
+        replaceDist(packageJson.exports);
+
+        await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2));
+        await copyFile('README.md', 'dist/README.md');
+        await copyFile('src/favicon.ico', 'dist/favicon.ico');
+        await cp('./scripts', './dist/scripts', { recursive: true });
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 export default defineConfig({
     entry: ['src/**/*.ts'],
     format: ['cjs', 'esm'],
@@ -23,27 +46,5 @@ export default defineConfig({
     sourcemap: true,
     dts: true,
     clean: true,
-    onSuccess: async () => {
-        const packageJsonString = await readFile('package.json', 'utf-8');
-
-        try {
-            const packageJson = JSON.parse(packageJsonString) as PackageJson;
-            packageJson.main = './index.js';
-            packageJson.types = './index.d.ts';
-            packageJson.scripts = {
-                preinstall: 'node ./cli/scripts/preinstall.js'
-            };
-            delete packageJson.files;
-
-            replaceDist(packageJson.exports);
-
-            await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2));
-            await copyFile('README.md', 'dist/README.md');
-            await copyFile('src/favicon.ico', 'dist/favicon.ico');
-        } catch (error) {
-            console.error(error);
-        }
-
-        console.log('Mahameru built successfully.');
-    }
+    onSuccess
 })
