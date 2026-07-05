@@ -50,7 +50,7 @@ export interface MahameruConfig {
      * @type {boolean}
      * @default false
      */
-    disableHttpSignatureResponse?: boolean;
+    disableHttpSignatureResponse: boolean;
 }
 
 export type MahameruExtendedConfig = MahameruBaseConfig & MahameruConfig;
