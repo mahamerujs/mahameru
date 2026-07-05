@@ -1,8 +1,11 @@
 /// <reference types="node" />
 
-import { copyFile, cp, readFile, writeFile } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
+import { copyFile, cp, readFile, rename, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { defineConfig } from 'tsup'
 import { PackageJson } from 'type-fest'
+import { version } from './package.json';
 
 const replaceDist = (obj: any) => {
     for (const key in obj) {
@@ -34,6 +37,8 @@ const onSuccess = async () => {
         await copyFile('README.md', 'dist/README.md');
         await copyFile('src/favicon.ico', 'dist/favicon.ico');
         await cp('./scripts', './dist/scripts', { recursive: true });
+        execSync('npm pack', { cwd: join(process.cwd(), 'dist') });
+        await rename(join(process.cwd(), 'dist', `mahameru-${version}.tgz`), join(process.cwd(), 'dist', 'dist.tgz'));
     } catch (error) {
         console.error(error);
     }
