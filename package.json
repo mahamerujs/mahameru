@@ -2,29 +2,24 @@
   "name": "mahameru",
   "version": "0.0.26",
   "description": "Mahameru is a minimal and fast Node.js framework for building HTTP servers",
-  "main": "./dist/index.js",
+  "bin": {
+    "mahameru": "./dist/cli/index.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "default": "./dist/index.js"
-    },
-    "./typeorm": {
-      "types": "./dist/typeorm/index.d.ts",
-      "require": "./dist/typeorm/index.js",
-      "import": "./dist/typeorm/index.mjs",
-      "default": "./dist/typeorm/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "dev": "tsup --config tsup.dev.config.ts",
-    "build": "tsup --config tsup.build.config.ts",
-    "typecheck": "tsc --noEmit --project tsconfig.json"
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "build": "tsup --config tsup.config.ts && node ./scripts/post-build.js",
+    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/post-build.js"
   },
   "keywords": [
     "mahamerujs",
@@ -46,15 +41,23 @@
   "engines": {
     "node": ">=20.6.0"
   },
+  "dependencies": {
+    "@mahameru/diatrema": "file:../diatrema/dist",
+    "commander": "^15.0.0",
+    "ora": "^9.4.1",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2",
+    "ts-morph": "^28.0.0",
+    "tsc-alias": "^1.9.1",
+    "tsx": "^4.23.1"
+  },
   "devDependencies": {
-    "@swc/core": "^1.15.43",
     "@types/node": "^26.0.1",
+    "@types/prompts": "^2.4.9",
+    "cross-env": "^10.1.0",
+    "esbuild-fix-imports-plugin": "^1.0.23",
     "tsup": "^8.5.1",
     "type-fest": "^5.7.0",
     "typescript": "^6.0.3"
-  },
-  "dependencies": {
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^1.0.0"
   }
 }

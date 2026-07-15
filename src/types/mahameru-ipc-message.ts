@@ -1,5 +1,3 @@
-import { MahameruMode } from "./mahameru";
-
 export interface MahameruIPCChildDataMap {
     RELOAD: { runtimeVersion: string; timestamp: number };
     RESTART: undefined;

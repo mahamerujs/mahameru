@@ -1,5 +1,5 @@
 import { access, constants } from "node:fs/promises";
-import type { HTTPMethod, ProtectedRoute } from "./mahameru";
+import type { HTTPMethod, ProtectedRoute } from "@mahameru/diatrema";
 
 const matchRoutePattern = (currentPath: string, routePattern: string): boolean => {
     const regexPattern = routePattern
@@ -25,7 +25,7 @@ export const validateProtectedRoute = (protectedRoutes: ProtectedRoute, method: 
 
 export const exists = async (target: string): Promise<boolean> => {
     try {
-        const result = await access(target, constants.R_OK);
+        await access(target, constants.R_OK);
 
         return true;
     } catch (error) {

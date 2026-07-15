@@ -1,25 +1,4 @@
-import { join } from "node:path";
-
-export interface MahameruBaseConfig {
-    dev: boolean;
-    rootPath: string;
-    appPath: string;
-    productionDir: string;
-    developmentDir: string;
-    httpServerSignature: string;
-    modulesDir: string;
-    routesDir: string;
-}
-
 export interface MahameruConfig {
-    /**
-     * Application name.
-     * Name cannot contain spaces.
-     * @type {string}
-     * @default 'MahameruJS'
-     * @example 'My-Example-App'
-     */
-    name: string;
     /**
      * Server port.
      * @type {number}
@@ -29,7 +8,7 @@ export interface MahameruConfig {
     /**
      * Server host.
      * @type {string}
-     * @default 'localhost'
+     * @default '127.0.0.1'
      */
     host: string;
     /**
@@ -45,36 +24,131 @@ export interface MahameruConfig {
      */
     allowedOrigins?: string[];
     /**
+     * Allowed IPs in request that does not have origin header. Set to `undefined` to disable IP restriction.
+     * @type {string[] | undefined}
+     * @default undefined
+     */
+    allowedIps?: string[];
+    /**
+     * Allowed hosts to connect to MahameruJS
+     * @type {string[] | '*'}
+     * @default '*'
+     * @example
+     * allowedHosts: ['localhost', '127.0.0.1']
+     */
+    allowedHosts: string[] | '*';
+    /**
      * Disable the HTTP signature response header.
      * X-Powered-By: MahameruJS
      * @type {boolean}
      * @default false
      */
-    disableHttpSignatureResponse: boolean;
-}
-
-export type MahameruExtendedConfig = MahameruBaseConfig & MahameruConfig;
-
-export const mahameruDefaultBaseConfig: MahameruBaseConfig = {
-    dev: process.env.MAHAMERU__MODE?.trim() === 'development',
-    rootPath: process.cwd(),
-    get appPath(): string {
-        return join(this.rootPath, this.developmentDir)
-    },
-    productionDir: '.mahameru',
-    developmentDir: '.mahameru',
-    httpServerSignature: 'MahameruJS',
-    modulesDir: 'modules',
-    routesDir: 'routes',
+    disableHttpSignature: boolean;
+    /**
+     * Enable or disable debug mode.
+     * @type {boolean}
+     * @default false
+     */
+    debug: boolean;
 }
 
 export const mahameruDefaultConfig: MahameruConfig = {
-    name: "MahameruJS",
-    port: process.env.MAHAMERU__HTTP_LISTEN_PORT ? parseInt(process.env.MAHAMERU__HTTP_LISTEN_PORT) : 3000,
-    host: process.env.MAHAMERU__HTTP_LISTEN_HOST || 'localhost',
+    port: 3000,
+    host: '127.0.0.1',
     allowedOrigins: undefined,
+    allowedIps: undefined,
     trailingSlash: false,
-    disableHttpSignatureResponse: false
+    disableHttpSignature: false,
+    debug: false,
+    allowedHosts: '*'
 };
 
-export type Config = (defaultConfig: MahameruConfig) => Promise<Partial<MahameruConfig>>;
+/**
+ * Context object provided to the MahameruJS configuration callback.
+ * 
+ * @typedef {Object} MahameruConfigHandlerContext
+ * @property {boolean} isDevelopmentMode - State flag indicating if the environment is in development mode (`process.env.MAHAMERU__DEV === 'true'`).
+ */
+export type MahameruConfigHandlerContext = {
+    isDevelopmentMode: boolean;
+}
+
+export type MahameruConfigCallback = (context: MahameruConfigHandlerContext) => Partial<MahameruConfig> | Promise<Partial<MahameruConfig>>;
+
+/**
+ * Handler function type for managing MahameruJS configuration.
+ * 
+ * This type defines a wrapper function that accepts a user callback. The callback
+ * receives a context object and generates a merged configuration by overlaying user 
+ * preferences onto the framework's default settings.
+ *
+ * @callback MahameruConfigCallback
+ * @param {MahameruConfigHandlerContext} context - The framework context containing defaults and environment state.
+ * @returns {Partial<MahameruConfig> | Promise<Partial<MahameruConfig>>} A partial configuration object or a Promise resolving to one.
+ *
+ * @typedef {function} MahameruConfigHandler
+ * @param {MahameruConfigCallback} callback - The user-defined configuration factory function.
+ * @returns {MahameruConfig | Promise<MahameruConfig>} The fully instantiated configuration object or a Promise resolving to one.
+ */
+export type MahameruConfigHandler = (
+    callback: (context: MahameruConfigHandlerContext) =>
+        Partial<MahameruConfig> | Promise<Partial<MahameruConfig>>
+) => MahameruConfigResult | Promise<MahameruConfigResult>;
+
+export type MahameruConfigResult = {
+    merged: MahameruConfig
+    partial?: Partial<MahameruConfig>;
+};
+
+/**
+ * Initializes and resolves the application configuration for MahameruJS.
+ * 
+ * This utility high-order function injects standard defaults and environment context 
+ * via a single context argument into your custom callback. It handles both synchronous 
+ * blocks and asynchronous Promises smoothly, ensuring all omitted keys fallback safely.
+ *
+ * @example
+ * // 1. Synchronous Example (with Object Destructuring)
+ * export default mahameruConfig(({ isDevelopmentMode }) => {
+ *   return {
+ *     port: isDevelopmentMode ? 3000 : 80,
+ *     debug: isDevelopmentMode
+ *   };
+ * });
+ *
+ * @example
+ * // 2. Asynchronous Example (fetching secrets or remote config)
+ * export default mahameruConfig(async (context) => {
+ *   const remotePort = await fetchVaultPort();
+ * 
+ *   return {
+ *     port: remotePort,
+ *     allowedHosts: context.isDevelopmentMode ? '*' : ['domain.com']
+ *   };
+ * });
+ * 
+ * @param {MahameruConfigCallback} callback - A factory function that returns your custom partial settings.
+ * @returns {MahameruConfigResult | Promise<MahameruConfigResult>} The final merged configuration object containing all required fields.
+ */
+export const mahameruConfig: MahameruConfigHandler = (callback) => {
+    const result = callback({
+        isDevelopmentMode: process.env.MAHAMERU__DEV === 'true'
+    });
+
+    if (result instanceof Promise)
+        return result.then(config => ({
+            merged: {
+                ...mahameruDefaultConfig,
+                ...config
+            },
+            partial: config
+        }));
+
+    return {
+        merged: {
+            ...mahameruDefaultConfig,
+            ...result
+        },
+        partial: result
+    };
+};

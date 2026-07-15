@@ -1,0 +1,80 @@
+import type { MahameruContainer } from "mahameru";
+
+export type {{namePascalCase}} = {
+    id: string,
+    name: string
+}
+
+export default class {{namePascalCase}}Service {
+    protected {{nameCamelCase}}s = new Map<string, {{namePascalCase}}>();
+
+    constructor(_container: MahameruContainer) {
+        this.createBatch([
+            {
+                name: '{{nameTitleCase}} 1'
+            },
+            {
+                name: '{{nameTitleCase}} 2'
+            },
+            {
+                name: '{{nameTitleCase}} 3'
+            }
+        ])
+    }
+
+    getAll() {
+        return Array.from(this.{{nameCamelCase}}s.values());
+    }
+
+    getOneById(id: string) {
+        return this.{{nameCamelCase}}s.get(id);
+    }
+
+    create({{nameCamelCase}}: Omit<{{namePascalCase}}, 'id'>) {
+        const latestId = this.{{nameCamelCase}}s.keys().next().value;
+        const nextId = Number(latestId) + 1;
+        const id = nextId.toString();
+
+        const new{{namePascalCase}}: {{namePascalCase}} = {
+            id,
+            ...{{nameCamelCase}}
+        }
+
+        this.{{nameCamelCase}}s.set(id, new{{namePascalCase}});
+
+        return new{{namePascalCase}};
+    }
+
+    createBatch({{nameCamelCase}}s: Omit<{{namePascalCase}}, 'id'>[]) {
+        const new{{namePascalCase}}s: {{namePascalCase}}[] = [...{{nameCamelCase}}s.map({{nameCamelCase}} => ({ id: '', ...{{nameCamelCase}} }))];
+        const latestIdString = this.{{nameCamelCase}}s.keys().next().value;
+        let latestId = latestIdString ? Number(latestIdString) : 0;
+
+        for (const new{{namePascalCase}} of new{{namePascalCase}}s) {
+            latestId += 1;
+            new{{namePascalCase}}.id = latestId.toString();
+
+            this.{{nameCamelCase}}s.set(new{{namePascalCase}}.id, new{{namePascalCase}});
+        }
+
+        return new{{namePascalCase}}s;
+    }
+
+    updateById(id: string, {{nameCamelCase}}: {{namePascalCase}}): {{namePascalCase}} {
+        const existingData = this.getOneById(id);
+
+        if (!existingData)
+            throw new Error(`{{namePascalCase}} with id ${id} not found`);
+
+        this.{{nameCamelCase}}s.set(id, {{nameCamelCase}});
+
+        return this.{{nameCamelCase}}s.get(id)!;
+    }
+
+    deleteById(id: string) {
+        if (!this.getOneById(id))
+            throw new Error(`{{namePascalCase}} with id ${id} not found`);
+
+        return this.{{nameCamelCase}}s.delete(id);
+    }
+}

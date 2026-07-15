@@ -1,0 +1,13 @@
+import type { RouteHandler } from 'mahameru'
+
+export const GET: RouteHandler = (_request, container) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return {{nameCamelCase}}Controller.getAll{{namePascalCase}}()
+}
+
+export const POST: RouteHandler = async (request, container) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return await {{nameCamelCase}}Controller.create{{namePascalCase}}(request)
+}

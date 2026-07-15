@@ -1,0 +1,53 @@
+import { type MahameruContainer, type MahameruRequest, MahameruResponse } from "mahameru";
+import type { {{namePascalCase}} } from "./service";
+
+export default class {{namePascalCase}}Controller {
+    constructor(protected readonly container: MahameruContainer) { }
+
+    getAll{{namePascalCase}}() {
+        const data = this.container.{{nameCamelCase}}Service.getAll()
+
+        return MahameruResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    get{{namePascalCase}}ById(_request: MahameruRequest, id: string) {
+        const data = this.container.{{nameCamelCase}}Service.getOneById(id)
+
+        return MahameruResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    async create{{namePascalCase}}(request: MahameruRequest) {
+        const {{nameCamelCase}}: {{namePascalCase}} = await request.json()
+        const data = this.container.{{nameCamelCase}}Service.create({{nameCamelCase}})
+
+        return MahameruResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    delete{{namePascalCase}}(_request: MahameruRequest, id: string) {
+        const data = this.container.{{nameCamelCase}}Service.deleteById(id)
+
+        return MahameruResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    async update{{namePascalCase}}(request: MahameruRequest, id: string) {
+        const {{nameCamelCase}}: {{namePascalCase}} = await request.json()
+        const data = this.container.{{nameCamelCase}}Service.updateById(id, {{nameCamelCase}})
+
+        return MahameruResponse.json({
+            success: true,
+            data
+        })
+    }
+}

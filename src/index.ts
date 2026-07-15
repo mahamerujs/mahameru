@@ -1,14 +1,5 @@
-import { mahameru } from './standalone';
+export { mahameru as default } from './standalone';
 
+export * from './types/index';
+export * from './diatrema';
 export * from './config';
-export * from './mahameru-container-error';
-export * from './mahameru-container';
-export * from './mahameru-error';
-export * from './mahameru-http-server-error';
-export * from './mahameru-request';
-export * from './mahameru-response';
-export * from './mahameru-server-error';
-export * from './types'
-export * from './mahameru';
-
-export default mahameru;

@@ -1,0 +1,25 @@
+import type { RouteHandler } from "mahameru"
+
+export const GET: RouteHandler = (request, container, { params }) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return {{nameCamelCase}}Controller.get{{namePascalCase}}ById(request, params.id)
+}
+
+export const PATCH: RouteHandler = async (request, container, { params }) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return await {{nameCamelCase}}Controller.update{{namePascalCase}}(request, params.id)
+}
+
+export const PUT: RouteHandler = async (request, container, { params }) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return await {{nameCamelCase}}Controller.update{{namePascalCase}}(request, params.id)
+}
+
+export const DELETE: RouteHandler = (request, container, { params }) => {
+    const { {{nameCamelCase}}Controller } = container
+
+    return {{nameCamelCase}}Controller.delete{{namePascalCase}}(request, params.id)
+}
