@@ -37,8 +37,7 @@ const diatremaDependencies = (options: DiatremaDependenciesOptions): DiatremaDep
 
     const httpServer = new HttpServer({
         dev: options.dev,
-        host: options.mahameruConfig.host,
-        port: options.mahameruConfig.port
+        ...options.mahameruConfig
     }, {
         container,
         route,

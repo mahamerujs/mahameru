@@ -36,7 +36,7 @@ export interface MahameruConfig {
      * @example
      * allowedHosts: ['localhost', '127.0.0.1']
      */
-    allowedHosts: string[] | '*';
+    allowedHosts?: string[];
     /**
      * Disable the HTTP signature response header.
      * X-Powered-By: MahameruJS
@@ -60,7 +60,7 @@ export const mahameruDefaultConfig: MahameruConfig = {
     trailingSlash: false,
     disableHttpSignature: false,
     debug: false,
-    allowedHosts: '*'
+    allowedHosts: undefined
 };
 
 /**
