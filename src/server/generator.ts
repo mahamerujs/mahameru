@@ -472,9 +472,9 @@ ${interfaceProperties}}
     }
 
     protected async generateEnvDTS() {
-        const defaultEnvFilePath = join(process.cwd(), '.env');
-        const envFilePath = join(process.cwd(), `.env.${this.options.dev ? "development" : "production"}`);
-        const envLocalFilePath = join(process.cwd(), '.env.local');
+        const defaultEnvFilePath = join(this.options.rootPath, '.env');
+        const envFilePath = join(this.options.rootPath, `.env.${this.options.dev ? "development" : "production"}`);
+        const envLocalFilePath = join(this.options.rootPath, '.env.local');
         const filesToLoad = [defaultEnvFilePath, envFilePath, envLocalFilePath];
         const envForMahameru: Record<string, string> = {};
         const outputTypesFilePath = join(this.options.outputTypesPath, 'mahameru-env.d.ts');

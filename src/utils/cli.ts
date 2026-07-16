@@ -93,7 +93,7 @@ const clearScreen = (): void => {
     process.stdout.write('\u001B[3J\u001B[2J\u001B[H');
 
     if (process.platform === 'win32') {
-        process.stdout.write('\x1Bc'); // Metode pembersihan alternatif khusus Windows
+        process.stdout.write('\x1Bc');
     }
 };
 
