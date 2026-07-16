@@ -18,8 +18,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit --project tsconfig.json",
-    "build": "tsup --config tsup.config.ts && node ./scripts/post-build.js",
-    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/post-build.js"
+    "build": "tsup --config tsup.config.ts && node ./scripts/postbuild.js",
+    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/postbuild.js",
+    "postinstall": "node ./scripts/postinstall.js"
   },
   "keywords": [
     "mahamerujs",
