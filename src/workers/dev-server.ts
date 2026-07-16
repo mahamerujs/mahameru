@@ -110,19 +110,11 @@ const start = async (rootPath: string, host: string, port: number) => {
 
         let app: Diatrema;
 
-        const shutdown = async () => {
-            if (process.platform === 'win32')
-                return;
-
-            if (app && app.initialized)
-                await app.shutdown();
-
-            process.exit(0);
+        const shutdown = () => {
+            return;
         }
 
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
-        process.on('message', async (message: DevServerParentProcessMessage) => {
+        const handleProcessOnMessage = async (message: DevServerParentProcessMessage) => {
             if (!message)
                 return;
 
@@ -131,11 +123,15 @@ const start = async (rootPath: string, host: string, port: number) => {
 
                 app = await start(rootPath, host, port);
             } else if (message.type === 'SHUTDOWN') {
+                console.log('[Mahameru Dev Server]', 'Shutting down...');
+
                 if (app && app.initialized) {
                     await sendMessage({ type: 'STATUS', data: 'STOPING' });
                     await app.shutdown();
                     await sendMessage({ type: 'STATUS', data: 'STOPPED' });
                 }
+
+                console.log('[Mahameru Dev Server]', 'Shutting down... Done');
 
                 process.exit(0);
             } else if (message.type === 'RESTART') {
@@ -150,7 +146,11 @@ const start = async (rootPath: string, host: string, port: number) => {
                 if (app && app.initialized)
                     await app.devHRM(message.filePath);
             }
-        });
+        }
+
+        process.on('SIGINT', shutdown);
+        process.on('SIGTERM', shutdown);
+        process.on('message', handleProcessOnMessage);
 
         await sendMessage({ type: 'STATUS', data: 'STARTED' });
     } catch (error) {

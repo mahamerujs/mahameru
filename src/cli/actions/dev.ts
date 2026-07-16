@@ -94,11 +94,13 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
 
             screenUpdate(errors ? errors : undefined, undefined);
 
-            const shutdown = async (_signal: NodeJS.Signals) => {
+            const shutdown = async (signal: NodeJS.Signals) => {
                 cli.cursor.show();
 
                 if (shuttingDown)
                     return;
+
+                console.log('[Mahameru CLI]', `Shutting down (${signal})...`);
 
                 shuttingDown = true;
 
@@ -128,7 +130,7 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                         resolve(false);
                     }, shutdownTimeout);
 
-                    devServerInstance.child.once('exit', () => {
+                    devServerInstance.child.on('exit', () => {
                         clearTimeout(timeout);
                         resolve(true);
                     });
@@ -139,6 +141,8 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                         devServerInstance.child.kill('SIGINT');
                     }
                 });
+
+                console.log('[Mahameru CLI]', `Shutting down (${signal})... Done`);
 
                 process.exit(0);
             }

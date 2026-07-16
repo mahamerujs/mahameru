@@ -118,31 +118,33 @@ function sendMessage(message: TypeCheckingWatcherChildProcessMessage) {
         const shutdownHandler = async () => {
             if (server)
                 server.stop();
+
             await rm(tsConfigDevFilePath, { force: true, recursive: true });
-
-            process.exit(0);
         }
 
-        const shutdown = async () => {
-            if (process.platform === 'win32')
-                return;
-
-            await shutdownHandler();
+        const shutdown = () => {
+            return;
         }
 
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
-        process.on('message', async (message: TypeCheckingWatcherParentProcessMessage) => {
+        const handleProcessOnMessage = async (message: TypeCheckingWatcherParentProcessMessage) => {
             if (message.type === 'SHUTDOWN') {
+                console.log('[Type Checking Server]', 'Shutting down...');
+
                 await sendMessage({ type: 'STATUS', data: 'STOPING' });
                 await shutdownHandler();
                 await sendMessage({ type: 'STATUS', data: 'STOPPED' });
+
+                console.log('[Type Checking Server]', 'Shutting down... Done');
 
                 process.exit(0);
             } else if (message.type === "START") {
                 await startHandler();
             }
-        });
+        }
+
+        process.on('SIGINT', shutdown);
+        process.on('SIGTERM', shutdown);
+        process.on('message', handleProcessOnMessage);
 
         await sendMessage({ type: 'STATUS', data: 'RUNNING' });
     } catch (error) {
