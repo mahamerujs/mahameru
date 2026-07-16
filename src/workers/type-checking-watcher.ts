@@ -134,7 +134,11 @@ function sendMessage(message: TypeCheckingWatcherChildProcessMessage) {
         process.on('SIGTERM', shutdown);
         process.on('message', async (message: TypeCheckingWatcherParentProcessMessage) => {
             if (message.type === 'SHUTDOWN') {
+                await sendMessage({ type: 'STATUS', data: 'STOPING' });
                 await shutdownHandler();
+                await sendMessage({ type: 'STATUS', data: 'STOPPED' });
+
+                process.exit(0);
             } else if (message.type === "START") {
                 await startHandler();
             }

@@ -20,6 +20,7 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
 
     return async ({ host, port }: { host: string; port: number }) => {
         let shuttingDown = false;
+        const shutdownTimeout = 3000;
 
         try {
             devEnvironmentCheck(rootPath);
@@ -94,7 +95,7 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
             screenUpdate(errors ? errors : undefined, undefined);
 
             const shutdown = async (_signal: NodeJS.Signals) => {
-                cli.cursor.hide();
+                cli.cursor.show();
 
                 if (shuttingDown)
                     return;
@@ -106,9 +107,9 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                         console.warn("Watcher process took too long to shutdown. Forcing kill...");
                         typeCheckingWatcherProcess.kill('SIGKILL');
                         resolve(false);
-                    }, 5000);
+                    }, shutdownTimeout);
 
-                    typeCheckingWatcherProcess.once('exit', () => {
+                    typeCheckingWatcherProcess.on('exit', () => {
                         clearTimeout(timeout);
                         resolve(true);
                     });
@@ -125,7 +126,7 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                         console.warn("Dev server took too long to shutdown. Forcing kill...");
                         devServerInstance.child.kill('SIGKILL');
                         resolve(false);
-                    }, 5000);
+                    }, shutdownTimeout);
 
                     devServerInstance.child.once('exit', () => {
                         clearTimeout(timeout);
@@ -139,12 +140,11 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                     }
                 });
 
-                process.env.MAHAMERU__DEV = '';
                 process.exit(0);
             }
 
-            process.on('SIGINT', () => shutdown('SIGINT'));
-            process.on('SIGTERM', () => shutdown('SIGTERM'));
+            process.on('SIGINT', shutdown);
+            process.on('SIGTERM', shutdown);
         } catch (error) {
             if (error instanceof Error) {
                 console.error(error.message);
@@ -290,4 +290,3 @@ function screenUpdate(body: string | string[] | undefined, spinner?: Ora, showHe
     cli.clearScreen();
     cli.updateScreen(showHeader ? header : undefined, content, spinner);
 }
-

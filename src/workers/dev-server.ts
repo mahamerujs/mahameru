@@ -131,17 +131,19 @@ const start = async (rootPath: string, host: string, port: number) => {
 
                 app = await start(rootPath, host, port);
             } else if (message.type === 'SHUTDOWN') {
-                await sendMessage({ type: 'STATUS', data: 'STOPING' });
-
-                if (app && app.initialized)
+                if (app && app.initialized) {
+                    await sendMessage({ type: 'STATUS', data: 'STOPING' });
                     await app.shutdown();
-
-                await sendMessage({ type: 'STATUS', data: 'STOPPED' });
+                    await sendMessage({ type: 'STATUS', data: 'STOPPED' });
+                }
 
                 process.exit(0);
             } else if (message.type === 'RESTART') {
-                if (app && app.initialized)
+                if (app && app.initialized) {
+                    await sendMessage({ type: 'STATUS', data: 'STOPING' });
                     await app.shutdown();
+                    await sendMessage({ type: 'STATUS', data: 'STOPPED' });
+                }
 
                 app = await start(rootPath, host, port);
             } else if (message.type === 'FILE_CHANGED') {
