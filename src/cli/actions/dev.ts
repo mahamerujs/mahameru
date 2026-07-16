@@ -94,7 +94,7 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
 
             screenUpdate(errors ? errors : undefined, undefined);
 
-            const shutdown = async (signal: NodeJS.Signals) => {
+            const shutdown = async (_signal: NodeJS.Signals) => {
                 cli.cursor.show();
 
                 if (shuttingDown)
