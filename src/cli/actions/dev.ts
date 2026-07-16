@@ -10,6 +10,7 @@ import type { TypeCheckingWatcherChildProcessMessage, TypeCheckingWatcherParentP
 import type { DevServerChildProcessMessage, DevServerParentProcessMessage, DevServerStatus } from "../../workers/dev-server";
 import pc from 'picocolors';
 import { MAHAMERU_TITLE } from "../../constants";
+import readline from 'readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 let appState: { port: number, host: string; mode: "development" | "production" } | null = null;
@@ -92,6 +93,8 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                 mode: data.mode
             }
 
+            console.log('Ready!');
+
             screenUpdate(errors ? errors : undefined, undefined);
 
             const shutdown = async (_signal: NodeJS.Signals) => {
@@ -163,10 +166,18 @@ const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: 
     const child = await new Promise<ChildProcess>(resolve => {
         const child = fork(join(__dirname, '..', '..', 'workers', 'type-checking-watcher.js'), {
             cwd: rootPath,
-            stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
             env: {
                 MAHAMERU__ROOT_PATH: rootPath
             }
+        });
+
+        child.stdout?.on('data', (data) => {
+            process.stdout.write(data);
+        });
+
+        child.stderr?.on('data', (data) => {
+            process.stderr.write(data);
         });
 
         child.on('message', (message: TypeCheckingWatcherChildProcessMessage) => {
@@ -225,7 +236,7 @@ const devServer = async (rootPath: string, handleOnMessage: (message: DevServerC
             devServerPath
         ], {
             cwd: rootPath,
-            stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
             env: {
                 ...process.env,
                 MAHAMERU__DEV: 'true',
@@ -233,6 +244,14 @@ const devServer = async (rootPath: string, handleOnMessage: (message: DevServerC
                 MAHAMERU__HTTP_LISTEN_HOST: host,
                 MAHAMERU__HTTP_LISTEN_PORT: String(port)
             }
+        });
+
+        child.stdout?.on('data', (data) => {
+            process.stdout.write(data);
+        });
+
+        child.stderr?.on('data', (data) => {
+            process.stderr.write(data);
         });
 
         child.on('message', (message: DevServerChildProcessMessage) => {
@@ -287,6 +306,5 @@ function screenUpdate(body: string | string[] | undefined, spinner?: Ora, showHe
         }
 
     cli.cursor.hide();
-    cli.clearScreen();
     cli.updateScreen(showHeader ? header : undefined, content, spinner);
 }

@@ -14,6 +14,18 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { MAHAMERU_TITLE } from '../constants';
 import { fileURLToPath } from 'node:url';
+import readline from 'node:readline';
+
+if (process.platform === 'win32') {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    rl.on('SIGINT', () => {
+        process.emit('SIGINT');
+    });
+}
 
 (async () => {
     const mahameru = new Command();
