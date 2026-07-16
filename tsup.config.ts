@@ -1,7 +1,6 @@
 /// <reference types="node" />
 
 import { copyFile, cp, readFile, rename, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { defineConfig } from 'tsup'
 import { fixExtensionsPlugin } from 'esbuild-fix-imports-plugin';
 import { rmSync } from 'node:fs';
@@ -47,7 +46,6 @@ const onSuccess = async () => {
         await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2), 'utf-8');
         await copyFile('README.md', 'dist/README.md');
         await copyFile('src/favicon.ico', 'dist/favicon.ico');
-        await cp('scripts', join('dist', 'scripts'), { recursive: true });
         await cp('src/cli/templates', 'dist/cli/templates', { recursive: true });
     } catch (error) {
         console.error(error);
@@ -55,6 +53,7 @@ const onSuccess = async () => {
 }
 
 rmSync('dist.tgz', { force: true, recursive: true });
+rmSync('dist', { force: true, recursive: true });
 
 export default defineConfig({
     bundle: false,
@@ -67,7 +66,7 @@ export default defineConfig({
     sourcemap: true,
     dts: true,
     keepNames: true,
-    clean: process.env.NODE_ENV !== 'development',
+    clean: true,
     watch: process.env.NODE_ENV === 'development',
     shims: true,
     esbuildPlugins: [fixExtensionsPlugin()],
