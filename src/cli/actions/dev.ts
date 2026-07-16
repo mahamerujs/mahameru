@@ -100,8 +100,6 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                 if (shuttingDown)
                     return;
 
-                console.log('[Mahameru CLI]', `Shutting down (${signal})...`);
-
                 shuttingDown = true;
 
                 await new Promise(resolve => {
@@ -141,8 +139,6 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                         devServerInstance.child.kill('SIGINT');
                     }
                 });
-
-                console.log('[Mahameru CLI]', `Shutting down (${signal})... Done`);
 
                 process.exit(0);
             }

@@ -128,13 +128,9 @@ function sendMessage(message: TypeCheckingWatcherChildProcessMessage) {
 
         const handleProcessOnMessage = async (message: TypeCheckingWatcherParentProcessMessage) => {
             if (message.type === 'SHUTDOWN') {
-                console.log('[Type Checking Server]', 'Shutting down...');
-
                 await sendMessage({ type: 'STATUS', data: 'STOPING' });
                 await shutdownHandler();
                 await sendMessage({ type: 'STATUS', data: 'STOPPED' });
-
-                console.log('[Type Checking Server]', 'Shutting down... Done');
 
                 process.exit(0);
             } else if (message.type === "START") {

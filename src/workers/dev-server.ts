@@ -123,15 +123,11 @@ const start = async (rootPath: string, host: string, port: number) => {
 
                 app = await start(rootPath, host, port);
             } else if (message.type === 'SHUTDOWN') {
-                console.log('[Mahameru Dev Server]', 'Shutting down...');
-
                 if (app && app.initialized) {
                     await sendMessage({ type: 'STATUS', data: 'STOPING' });
                     await app.shutdown();
                     await sendMessage({ type: 'STATUS', data: 'STOPPED' });
                 }
-
-                console.log('[Mahameru Dev Server]', 'Shutting down... Done');
 
                 process.exit(0);
             } else if (message.type === 'RESTART') {
