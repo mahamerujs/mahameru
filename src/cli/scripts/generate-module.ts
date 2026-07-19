@@ -6,8 +6,6 @@ import pc from 'picocolors';
 import { exists } from "../../helpers";
 import { ModuleExits } from "../../errors/module-exists";
 import { toCamelCase, toPascalCase, toTitleCase } from "../../utils/common";
-import { Generator } from "../../server/generator";
-import { createLogger } from "@mahameru/diatrema";
 
 export default async function generateModule(rootPath: string, name: string) {
     const spinner = ora('Generating `' + name + '` module...').start();
@@ -63,19 +61,18 @@ export default async function generateModule(rootPath: string, name: string) {
         await writeFile(join(routePath, 'route.ts'), routeIndexTemplateString, 'utf8');
         await writeFile(join(routeParamIdPath, 'route.ts'), routeParamIdTemplateString, 'utf8');
 
-        const generator = new Generator({
-            modulesPath: join(rootPath, 'src', 'modules'),
-            appPath: join(rootPath, '.mahameru'),
-            dev: true,
-            outputTypesPath: join(rootPath, '.mahameru', 'types'),
-            rootPath,
-            routesPath: join(rootPath, 'src', 'routes'),
-            sourceDirPath: join(rootPath, 'src')
-        }, {
-            logger: createLogger(true)
-        });
+        // const generator = new Generator({
+        //     modulesDir: 'modules',
+        //     appPath: join(rootPath, '.mahameru'),
+        //     dev: true,
+        //     debug: true,
+        //     outputTypesPath: join(rootPath, '.types'),
+        //     rootPath,
+        //     routesDir: 'routes',
+        //     sourceDirPath: join(rootPath, 'src')
+        // });
 
-        await generator.start();
+        // await generator.start();
 
         spinner.succeed(`✅ ${pc.green('Module `' + name + '` generated successfully')}`);
     } catch (error) {

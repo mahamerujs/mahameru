@@ -6,11 +6,11 @@ import { ChildProcess, fork, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { printServerReadyString } from "../../utils/printServerReady";
 import cli from "../../utils/cli";
-import type { TypeCheckingWatcherChildProcessMessage, TypeCheckingWatcherParentProcessMessage, TypeCheckingWatcherStatus } from "../../workers/type-checking-watcher";
+import type { TypescriptServerParentToChildMessage } from "../../workers/typescript-server";
 import type { DevServerChildProcessMessage, DevServerParentProcessMessage, DevServerStatus } from "../../workers/dev-server";
 import pc from 'picocolors';
 import { MAHAMERU_TITLE } from "../../constants";
-import readline from 'readline';
+import type { TypescriptServerEvents, TypescriptServerStatus } from "../../server/typescript-server";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 let appState: { port: number, host: string; mode: "development" | "production" } | null = null;
@@ -19,95 +19,102 @@ let version = '0.0.0';
 export default function dev({ rootPath, version: originalVersion }: { rootPath: string; version: string }) {
     version = originalVersion;
 
-    return async ({ host, port }: { host: string; port: number }) => {
+    return async ({ }: { host: string; port: number }) => {
         let shuttingDown = false;
         const shutdownTimeout = 3000;
 
         try {
             devEnvironmentCheck(rootPath);
 
-            cli.clearScreen();
+            // cli.clearScreen();
 
             const spinner = ora('Starting server...').start();
-            screenUpdate(undefined, spinner, true);
+            // screenUpdate(undefined, spinner, true);
 
             await rm(join(rootPath, '.mahameru'), { recursive: true, force: true });
 
             spinner.text = 'Starting...';
 
             let errors: string | undefined = undefined;
-            let devServerInstance: ReturnTypeDevServer;
+            // let devServerInstance: ReturnTypeDevServer;
 
-            const { child: typeCheckingWatcherProcess, start: startTypeCheckingWatcher } = await typeCheckingWatcher(rootPath, (message: TypeCheckingWatcherChildProcessMessage) => {
-                if (message.type === 'COMPILE_ERROR') {
-                    errors = message.error;
-
+            const { child: typeCheckingWatcherProcess, start: startTypeCheckingWatcher } = await typeCheckingWatcher(rootPath, (message) => {
+                if (message["compile-error"]) {
+                    errors = message["compile-error"][0].length > 0 ? message["compile-error"][0].map(m => m.formatted).join('\n\n') : undefined;
+                    console.log(errors);
                     if (!appState)
                         return;
 
-                    if (message.error) {
-                        screenUpdate([message.error]);
+                    if (errors) {
+                        // screenUpdate([message.error]);
+                        console.log(errors);
                     } else {
-                        screenUpdate(undefined);
+                        // screenUpdate(undefined);
                     }
-                } else if (message.type === 'STATUS_CHANGED') {
-                    if (message.message.includes('Starting compilation in watch mode')) {
+                } else if (message['status-update']) {
+                    const status = message['status-update'][0];
 
-                    } else if (message.message.includes('Starting incremental compilation')) {
-
-                    } else if (message.message.includes('Watching for file changes')) {
-
-                    } else {
-                        console.log('[Type Checking Watcher]', message.message);
+                    if (spinner.isSpinning) {
+                        if (status === 'GENERATING-TYPES') {
+                            spinner.text = 'Generating types...';
+                        } else if (status === 'STARTING') {
+                            spinner.text = 'Starting Typescript server...';
+                        } else if (status === 'READY') {
+                            spinner.text = 'Typescript server ready!';
+                        }
                     }
-                } else if (message.type === 'FILE_CHANGED') {
-                    if (devServerInstance) {
-                        if (message.eventType === 'update')
-                            devServerInstance.sendMessage({ type: 'FILE_CHANGED', filePath: message.filePath, eventType: message.eventType });
-                    }
-                    // console.log('[Type Checking Watcher]', message.filePath, message.eventType);
-                } else if (message.type === 'MESSAGE') {
-                    if (spinner.isSpinning)
-                        spinner.text = message.data;
+                } else if (message['file-changed']) {
+                    const [filePath, eventType, itemType] = message['file-changed'];
+                    // if (devServerInstance) {
+                    //     if (message.eventType === 'update')
+                    //         devServerInstance.sendMessage({ type: 'FILE_CHANGED', filePath: message.filePath, eventType: message.eventType });
+                    // }
+                    console.log('[TypescriptServer]', filePath, eventType, itemType);
                 }
             });
 
             spinner.text = 'Starting type checking watcher...';
             await startTypeCheckingWatcher();
 
-            devServerInstance = await devServer(rootPath, (message) => {
-                if (message.type === "MESSAGE") {
-                    spinner.text = message.data;
-                }
-            }, version, host, port);
+            // devServerInstance = await devServer(rootPath, (message) => {
+            //     if (message.type === "MESSAGE") {
+            //         spinner.text = message.data;
+            //     }
+            // }, version, host, port);
 
-            spinner.text = 'Starting Mahameru Dev Server...';
+            // spinner.text = 'Starting Mahameru Dev Server...';
 
-            const data = await devServerInstance.start();
+            // const data = await devServerInstance.start();
 
             spinner.stop();
 
-            appState = {
-                port: data.port,
-                host: data.host,
-                mode: data.mode
-            }
+            // appState = {
+            //     port: data.port,
+            //     host: data.host,
+            //     mode: data.mode
+            // }
 
             console.log('Ready!');
 
-            screenUpdate(errors ? errors : undefined, undefined);
+            // screenUpdate(errors ? errors : undefined, undefined);
 
-            const shutdown = async (_signal: NodeJS.Signals) => {
-                cli.cursor.show();
+            const shutdown = async (signal?: NodeJS.Signals) => {
+                // cli.cursor.show();
 
-                if (shuttingDown)
+                if (shuttingDown) {
+                    console.log(`Please wait, we are trying to shutdown gracefully.`);
+
                     return;
+                }
+
+                const spinner = ora(`${signal ? `Received ${signal} ` : ''}signal. Shutting down...`).start();
 
                 shuttingDown = true;
 
+                spinner.text = 'Shutting down Typescript Server...';
                 await new Promise(resolve => {
                     const timeout = setTimeout(() => {
-                        console.warn("Watcher process took too long to shutdown. Forcing kill...");
+                        spinner.text = 'Watcher process took too long to shutdown. Forcing kill...';
                         typeCheckingWatcherProcess.kill('SIGKILL');
                         resolve(false);
                     }, shutdownTimeout);
@@ -124,24 +131,28 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
                     }
                 });
 
-                await new Promise(resolve => {
-                    const timeout = setTimeout(() => {
-                        console.warn("Dev server took too long to shutdown. Forcing kill...");
-                        devServerInstance.child.kill('SIGKILL');
-                        resolve(false);
-                    }, shutdownTimeout);
+                spinner.text = 'Shutting down Mahameru Dev Server...';
+                // await new Promise(resolve => {
+                //     const timeout = setTimeout(() => {
+                //         console.warn("Dev server took too long to shutdown. Forcing kill...");
+                //         spinner.text = 'Dev server took too long to shutdown. Forcing kill...';
+                //         devServerInstance.child.kill('SIGKILL');
+                //         resolve(false);
+                //     }, shutdownTimeout);
 
-                    devServerInstance.child.on('exit', () => {
-                        clearTimeout(timeout);
-                        resolve(true);
-                    });
+                //     devServerInstance.child.on('exit', () => {
+                //         clearTimeout(timeout);
+                //         resolve(true);
+                //     });
 
-                    if (devServerInstance.child.connected) {
-                        devServerInstance.sendMessage({ type: 'SHUTDOWN' });
-                    } else {
-                        devServerInstance.child.kill('SIGINT');
-                    }
-                });
+                //     if (devServerInstance.child.connected) {
+                //         devServerInstance.sendMessage({ type: 'SHUTDOWN' });
+                //     } else {
+                //         devServerInstance.child.kill('SIGINT');
+                //     }
+                // });
+
+                spinner.succeed('Shutdown complete.');
 
                 process.exit(0);
             }
@@ -160,11 +171,12 @@ export default function dev({ rootPath, version: originalVersion }: { rootPath: 
     }
 }
 
-const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: TypeCheckingWatcherChildProcessMessage) => void = () => { }) => {
-    let status: TypeCheckingWatcherStatus = 'STOPPED';
+const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: Partial<TypescriptServerEvents>) => void = () => { }) => {
+    let status: TypescriptServerStatus = 'STOPPED';
 
     const child = await new Promise<ChildProcess>(resolve => {
-        const child = fork(join(__dirname, '..', '..', 'workers', 'type-checking-watcher.js'), {
+        const workerFilePath = join(rootPath, 'node_modules', 'mahameru', 'workers', 'typescript-server.js');
+        const child = spawn(process.execPath, [workerFilePath], {
             cwd: rootPath,
             stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
             env: {
@@ -180,20 +192,20 @@ const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: 
             process.stderr.write(data);
         });
 
-        child.on('message', (message: TypeCheckingWatcherChildProcessMessage) => {
+        child.on('message', (message: Partial<TypescriptServerEvents>) => {
             handleOnMessage(message);
 
-            if (message.type === 'STATUS') {
-                status = message.data;
+            if (message['status-update']) {
+                status = message['status-update'][0];
 
-                if (status === 'RUNNING') {
+                if (status === 'WORKER:STARTED') {
                     resolve(child);
                 }
             }
         });
     })
 
-    const sendMessage = (message: TypeCheckingWatcherParentProcessMessage) => new Promise<true>((resolve, reject) => {
+    const sendMessage = (message: TypescriptServerParentToChildMessage) => new Promise<true>((resolve, reject) => {
         child.send(message, (error) => error ? reject(error) : resolve(true));
     });
 
@@ -201,8 +213,8 @@ const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: 
         status,
         sendMessage,
         start: () => new Promise(resolve => {
-            const handleOnStarted = (message: TypeCheckingWatcherChildProcessMessage) => {
-                if (message.type === 'STATUS' && message.data === 'STARTED') {
+            const handleOnStarted = (message: Partial<TypescriptServerEvents>) => {
+                if (message['status-update'] && message['status-update'][0] === 'READY') {
                     child.off('message', handleOnStarted);
 
                     resolve(true);
@@ -222,9 +234,9 @@ type ReturnTypeDevServer = {
     child: ChildProcess;
     sendMessage: (message: DevServerParentProcessMessage) => Promise<true>;
     start: () => Promise<{
-        port: number;
-        host: string;
-        mode: "development";
+        port?: number;
+        host?: string;
+        mode: "development" | "production";
     }>;
 };
 
@@ -275,7 +287,7 @@ const devServer = async (rootPath: string, handleOnMessage: (message: DevServerC
         status,
         child,
         sendMessage,
-        start: () => new Promise<{ port: number; host: string; mode: "development"; }>(resolve => {
+        start: () => new Promise(resolve => {
             const handleOnStarted = (message: DevServerChildProcessMessage) => {
                 if (message.type === 'READY') {
                     child.off('message', handleOnStarted);

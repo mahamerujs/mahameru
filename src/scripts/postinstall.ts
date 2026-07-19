@@ -1,15 +1,20 @@
-import { join } from 'node:path'
-import { Generator } from '../server/generator.js'
+import { join } from 'node:path';
+import { Mahameru } from '../mahameru';
+import { createLogger } from '@mahameru/diatrema';
 
 const rootPath = process.env.INIT_CWD || process.cwd();
-const generator = new Generator({
-    rootPath: rootPath,
+const typesDirPath = join(rootPath, '.types');
+const generator = Mahameru.generator({
     dev: true,
-    appPath: join(rootPath, '.mahameru'),
-    routesPath: join(rootPath, '.mahameru', 'routes'),
-    modulesPath: join(rootPath, '.mahameru', 'modules'),
-    outputTypesPath: join(rootPath, '.mahameru', '.types'),
-    sourceDirPath: join(rootPath, 'src')
-});
+    outputTypesDirPath: typesDirPath,
+    rootPath
+},
+    createLogger(['Mahameru', 'postinstall'], true)
+);
 
-generator.start();
+(async () => {
+    await generator.env();
+    await generator.barrelIndexFile(typesDirPath);
+    await generator.mahameruDts();
+    await generator.appendMahameruDTSToTsConfig();
+})();

@@ -1,17 +1,10 @@
 import readline from 'readline';
-import { Writable } from 'stream';
 
 interface OraSpinner {
     frame: () => string;
     isActive?: boolean;
     [key: string]: any;
 }
-
-const muteStream = new Writable({
-    write(_chunk, _encoding, callback) {
-        callback();
-    }
-});
 
 const cursor = {
     /**

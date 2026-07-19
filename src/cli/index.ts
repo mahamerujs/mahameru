@@ -14,15 +14,17 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { MAHAMERU_TITLE } from '../constants';
 import { fileURLToPath } from 'node:url';
-import readline from 'node:readline';
+import { createInterface } from 'node:readline';
+import type { PackageJson } from 'type-fest'
+import devTest from './actions/dev-test';
 
 if (process.platform === 'win32') {
-    const rl = readline.createInterface({
+    const readline = createInterface({
         input: process.stdin,
         output: process.stdout,
     });
 
-    rl.on('SIGINT', () => {
+    readline.on('SIGINT', () => {
         process.emit('SIGINT');
     });
 }
@@ -33,12 +35,27 @@ if (process.platform === 'win32') {
     try {
         const rootPath = process.cwd();
         const __dirname = dirname(fileURLToPath(import.meta.url));
-        const { version } = await JSON.parse(await readFile(join(__dirname, '..', 'package.json'), 'utf-8'));
+        const packageJsonFilePath = join(__dirname, '..', 'package.json');
+        const { version }: PackageJson = JSON.parse(await readFile(packageJsonFilePath, 'utf-8').catch((error: unknown) => {
+            if (error && typeof error === 'object' && "code" in error && error.code === 'ENOENT')
+                throw new Error(`package.json file not found at ${packageJsonFilePath}`);
+
+            throw error;
+        }))
+
+        if (!version)
+            throw new Error('package.json file does not have a version property.');
 
         mahameru
             .name('mahameru')
             .description(`${pc.bold(MAHAMERU_TITLE)} ${pc.dim(`v${version}`)}`)
             .version(version, '-v, --version', 'Display help for command');
+
+        mahameru.command('dev:test')
+            .description('Start MahameruJS development server (Test Mode).')
+            .option('-p, --port <number>', 'Port to run the server on', parsePort, mahameruDefaultConfig.port)
+            .option('-H, --host <string>', 'Host to run the server on', mahameruDefaultConfig.host)
+            .action(devTest({ rootPath, version }));
 
         mahameru.command('dev')
             .description('Start MahameruJS development server.')
@@ -52,6 +69,7 @@ if (process.platform === 'win32') {
 
         mahameru.command('start')
             .description('Start MahameruJS production server.')
+            .option('-d, --daemon', 'Run as a daemon', false)
             .option('-p, --port <number>', 'Port to run the server on', parsePort, 8000)
             .option('-H, --host <string>', 'Host to run the server on', '127.0.0.1')
             .action(start({ rootPath, version }));
@@ -70,7 +88,11 @@ if (process.platform === 'win32') {
 
         await mahameru.parseAsync(process.argv);
     } catch (error) {
-        console.error(error);
+        if (error instanceof Error) {
+            console.error(pc.red(error.message));
+        } else {
+            console.error(error);
+        }
 
         process.exit(1);
     }

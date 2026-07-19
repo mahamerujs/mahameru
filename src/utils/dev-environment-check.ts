@@ -16,6 +16,8 @@ export function devEnvironmentCheck(rootPath: string) {
         message += `Please install ${dependenciesNotFound.length > 1 ? 'them' : 'it'} by running:\n\n`;
         message += dependenciesNotFound.map(dependency => pc.yellow(`  npm install -D ${dependency}`)).join('\n');
 
-        throw new Error(message);
+        console.error(message);
+
+        process.exit(1);
     }
 }

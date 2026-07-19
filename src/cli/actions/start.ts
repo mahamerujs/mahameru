@@ -1,5 +1,4 @@
-import Diatrema, { MahameruServerError } from "@mahameru/diatrema";
-import diatremaDependencies from "../../dependencies-builder";
+import Diatrema, { MahameruError } from "@mahameru/diatrema";
 import type { MahameruIPCMessageChild } from "../../types";
 import { printServerReady } from "../../utils/printServerReady";
 import { isPortAvailable } from "../../utils/free-port-finder";
@@ -25,17 +24,12 @@ export default function start({ rootPath, version }: { rootPath: string; version
             }
 
             if (!(await isPortAvailable(port)))
-                throw new MahameruServerError(`Port ${port} is already in use`);
+                throw new MahameruError(`Port ${port} is already in use`);
 
             const app = new Diatrema({
                 rootPath,
                 dev: false
-            },
-                diatremaDependencies({
-                    dev: false,
-                    mahameruConfig: mahameruConfig.merged
-                })
-            );
+            });
 
             app.on('ready', ({ port, host, mode }) => {
                 printServerReady({ mode, host, port, version });
@@ -56,7 +50,7 @@ export default function start({ rootPath, version }: { rootPath: string; version
                 }
             });
         } catch (error) {
-            if (error instanceof MahameruServerError) {
+            if (error instanceof MahameruError) {
                 console.error(error);
 
                 process.exit(1);

@@ -3,7 +3,6 @@ import { join, resolve } from 'node:path';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
-import { createLogger } from '@mahameru/diatrema';
 import ts from 'typescript';
 import pc from 'picocolors';
 import { replaceTscAliasPaths } from 'tsc-alias';
@@ -60,14 +59,13 @@ export class MahameruDevServer extends EventEmitter {
 
         this.generator = new Generator({
             dev: true,
-            modulesPath: this.options.moduleDirPath,
-            appPath: join(this.options.productionDirPath),
-            routesPath: join(this.options.productionDirPath, 'routes'),
+            modulesDir: 'modules',
+            appPath: this.options.productionDirPath,
+            routesDir: 'routes',
             outputTypesPath: join(this.options.productionDirPath, '.types'),
             rootPath: this.options.rootPath,
-            sourceDirPath: this.options.sourceDirPath
-        }, {
-            logger: createLogger(true)
+            sourceDirPath: this.options.sourceDirPath,
+            debug: true
         });
     }
 

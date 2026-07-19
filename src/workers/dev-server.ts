@@ -1,6 +1,5 @@
 import Diatrema from "@mahameru/diatrema";
 import { devEnvironmentCheck } from "../utils/dev-environment-check";
-import diatremaDependencies from "../dependencies-builder";
 import { join } from "node:path";
 import { freePortFinder } from "../utils/free-port-finder";
 import { runTypescriptFile } from "../utils/run-typescript-file";
@@ -17,7 +16,7 @@ export type DevServerParentProcessMessage =
 export type DevServerStatus = 'RUNNING' | 'STARTING' | 'STARTED' | 'STOPING' | 'STOPPED';
 export type DevServerChildProcessMessage =
     | { type: 'STATUS'; data: DevServerStatus }
-    | { type: 'READY'; data: { port: number; host: string; mode: 'development' } }
+    | { type: 'READY'; data: { port?: number; host?: string; mode: 'development' | 'production' } }
     | { type: 'MESSAGE'; data: string }
     | { type: 'LOG'; data: string };
 
@@ -62,20 +61,15 @@ const start = async (rootPath: string, host: string, port: number) => {
 
     mahameruConfig.merged.port = await freePortFinder(mahameruConfig.merged.port);
 
-    process.send!({ type: 'MESSAGE', data: "Initializing Diatrema..." } as DevServerChildProcessMessage);
+    sendMessage({ type: 'MESSAGE', data: "Initializing Diatrema..." });
 
     const app = new Diatrema({
         rootPath,
         dev: true,
-    },
-        diatremaDependencies({
-            dev: true,
-            mahameruConfig: mahameruConfig.merged
-        })
-    );
+    });
 
     app.on('ready', ({ port, host, mode }) => {
-        process.send!({ type: 'READY', data: { port, host, mode } } as DevServerChildProcessMessage);
+        sendMessage({ type: 'READY', data: { port, host, mode } });
     });
 
     await app.initialize();
