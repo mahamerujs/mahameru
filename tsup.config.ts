@@ -45,8 +45,6 @@ const onSuccess = async () => {
 
         await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2), 'utf-8');
         await copyFile('README.md', 'dist/README.md');
-        await copyFile('src/favicon.ico', 'dist/favicon.ico');
-        await cp('src/cli/templates', 'dist/cli/templates', { recursive: true });
     } catch (error) {
         console.error(error);
     }
