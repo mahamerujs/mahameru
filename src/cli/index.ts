@@ -93,7 +93,5 @@ if (process.platform === 'win32') {
         } else {
             console.error(error);
         }
-
-        process.exit(1);
     }
 })()

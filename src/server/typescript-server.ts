@@ -1,4 +1,4 @@
-import { EventEmitter } from "@mahameru/diatrema";
+import { createLogger, EventEmitter, type Logger } from "@mahameru/diatrema";
 import { join, resolve } from "node:path";
 import {
     createEmitAndSemanticDiagnosticsBuilderProgram,
@@ -15,6 +15,7 @@ import {
 import pc from 'picocolors';
 import { readFileSync, writeFileSync, statSync, rmSync } from "node:fs";
 import { replaceTscAliasPaths } from "tsc-alias";
+import { rm } from "node:fs/promises";
 
 type TypescriptServerOptions = {
     rootPath: string;
@@ -50,10 +51,13 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
     protected pendingChanges = new Map<string, ['create' | 'update' | 'delete', 'file' | 'folder']>();
     protected isInitialBuildDone = false;
     protected _status: TypescriptServerStatus = 'STOPPED';
+    private isResolvingAlias = false;
+    protected logger: Logger;
 
     constructor(options: TypescriptServerOptions) {
         super();
         this.options = options;
+        this.logger = createLogger('TypescriptServer', this.options.debug);
     }
 
     get status() {
@@ -71,8 +75,10 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
         const tsConfig = JSON.parse(readFileSync(this.options.tsConfigFilePath, 'utf-8'));
         const tsConfigDev = {
             ...tsConfig,
-            compilerOptions: { ...tsConfig.compilerOptions },
-            include: [...tsConfig.include]
+            compilerOptions: {
+                ...(tsConfig.compilerOptions || {}),
+            },
+            include: [...(tsConfig.include || [])]
         };
 
         writeFileSync(this.options.tsConfigDevFilePath, JSON.stringify(tsConfigDev, null, 2));
@@ -100,9 +106,8 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
                         setImmediate(() => {
                             this.emit('status-update', 'READY');
                             this._status = 'READY';
-                            rmSync(this.options.tsConfigDevFilePath, { force: true, recursive: true });
                         });
-                    })
+                    }).catch(err => this.logger.error('Error running initial tscAlias:', err));
                 }
             }
         );
@@ -127,12 +132,13 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
                 callback(fileName, eventKind);
 
                 const absolutePath = resolve(fileName);
-                const isDir = this.isDirectory(absolutePath);
+                const isDelete = eventKind === FileWatcherEventKind.Deleted;
+                const isDir = this.isDirectory(absolutePath, isDelete);
 
                 if (isDir || (/\.tsx?$/.test(absolutePath) && !absolutePath.endsWith('.d.ts'))) {
                     let type: 'create' | 'update' | 'delete' = 'update';
 
-                    if (eventKind === FileWatcherEventKind.Deleted) {
+                    if (isDelete) {
                         type = 'delete';
                     } else if (eventKind === FileWatcherEventKind.Created) {
                         type = 'create';
@@ -148,12 +154,11 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
                 callback(fileName);
 
                 const absolutePath = resolve(fileName);
-                const isDir = this.isDirectory(absolutePath);
+                const isDelete = !sys.fileExists(absolutePath) && !sys.directoryExists(absolutePath);
+                const isDir = this.isDirectory(absolutePath, isDelete);
 
                 let type: 'create' | 'update' | 'delete' = 'create';
-
-                if (!sys.fileExists(absolutePath) && !sys.directoryExists(absolutePath))
-                    type = 'delete';
+                if (isDelete) type = 'delete';
 
                 if (isDir || (/\.tsx?$/.test(absolutePath) && !absolutePath.endsWith('.d.ts')))
                     this.pendingChanges.set(absolutePath, [type, isDir ? 'folder' : 'file']);
@@ -165,22 +170,30 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
 
     public stop() {
         if (this.watchProgram) {
-            this.logger('Shutting down...');
+            this.logger.debug('Shutting down...');
             this.emit('status-update', 'STOPPING');
             this._status = 'STOPPING';
             this.watchProgram.close();
             this.watchProgram = undefined;
         }
 
+        try {
+            rmSync(this.options.tsConfigDevFilePath, { force: true, recursive: true });
+        } catch (e) {
+        }
+
         this.pendingChanges.clear();
         this._errors = [];
         this.emit('status-update', 'STOPPED');
         this._status = 'STOPPED';
-        this.logger('Shutting down... Done.');
+        this.logger.debug('Shutting down... Done.');
     }
 
-    protected async tscAlias(callback: () => Promise<void>) {
-        const tsconfigTsAliasFilePath = join(this.options.rootPath, 'tsconfig.tsalias.json');
+    protected async tscAlias(callback: () => Promise<void> | void) {
+        if (this.isResolvingAlias) return;
+        this.isResolvingAlias = true;
+
+        const tsconfigTsAliasFilePath = join(this.options.rootPath, `tsconfig.tsalias-${Date.now()}.json`);
 
         try {
             const tsconfig = JSON.parse(readFileSync(this.options.tsConfigDevFilePath, 'utf-8'));
@@ -199,13 +212,13 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
                 outDir: this.options.developmentDirPath,
                 resolveFullPaths: true
             });
-            await callback();
-        } catch (aliasError: any) {
-            console.error(pc.red(`Error running tsc-alias: ${aliasError.message || aliasError}`));
 
-            process.exit(1);
+            await callback();
+        } catch (error) {
+            this.logger.debug('Error inside tscAlias process:', error);
         } finally {
-            rmSync(tsconfigTsAliasFilePath, { force: true });
+            await rm(tsconfigTsAliasFilePath, { force: true, recursive: true });
+            this.isResolvingAlias = false;
         }
     }
 
@@ -235,7 +248,7 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
     protected handleStatusDiagnostic(diagnostic: Diagnostic): void {
         const message = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
 
-        this.logger(message);
+        this.logger.debug(message);
 
         if (message.startsWith('Starting compilation in watch mode')) {
             this._errors = [];
@@ -246,22 +259,20 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
             this.tscAlias(async () => {
                 this.emit('compile-error', this._errors);
                 this._errors = [];
-            });
+            }).catch(err => this.logger.error('Error running tscAlias on file change:', err));
         }
     }
 
-    private isDirectory(path: string): boolean {
+    private isDirectory(path: string, wasDeleted = false): boolean {
         try {
             return statSync(path).isDirectory();
         } catch {
-            return !/\.[a-zA-Z0-9]+$/.test(path);
+            if (wasDeleted) {
+                const baseName = path.split(/[\\/]/).pop() || "";
+
+                return !baseName.includes('.');
+            }
+            return false;
         }
-    }
-
-    protected logger(...data: any[]) {
-        if (!this.options.debug)
-            return;
-
-        console.log('[TypescriptServer]', ...data);
     }
 }

@@ -3,7 +3,6 @@ import { devEnvironmentCheck } from "../utils/dev-environment-check";
 import { rm } from "node:fs/promises";
 import TypescriptServer, { type TypescriptServerEvents, type TypescriptServerStatus } from "../server/typescript-server";
 import pc from "picocolors";
-import { Generator } from "../server/generator";
 
 export type TypescriptServerParentToChildMessage =
     | { type: 'START' }
@@ -38,7 +37,7 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         if (!process.send || typeof process.send !== 'function' || typeof process.send === 'undefined') {
             console.error('This script can only be run in a child process.');
 
-            process.exit(1);
+            // process.exit(1);
         }
 
         const rootPath = process.env.MAHAMERU__ROOT_PATH;
@@ -53,27 +52,8 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         const tsConfigDevFilePath = join(rootPath, 'tsconfig.dev.json');
         const tsConfigFilePath = join(rootPath, 'tsconfig.json');
         let server: TypescriptServer | null = null;
-        const sourceDirPath = join(rootPath, 'src');
-        const appPath = join(rootPath, 'src');
         const startHandler = async () => {
-            await sendMessage({ "status-update": ['STARTING'] });
-
-            // const typeGenerator = new Generator({
-            //     dev: true,
-            //     debug: true,
-            //     rootPath,
-            //     appPath,
-            //     sourceDirPath,
-            //     routesDir: 'routes',
-            //     modulesDir: 'modules',
-            //     outputTypesPath: join(rootPath, '.types')
-            // });
-
-            // await sendMessage({ "status-update": ['GENERATING-TYPES'] });
-            // await typeGenerator.generateEnvDTS();
-            // await typeGenerator.generateBarrelIndexFile();
-            // await typeGenerator.generateMahameruDTSFile();
-            // await typeGenerator.appendMahameruDTSToTsConfig();
+            await sendMessage({ "status-update": ['READY'] });
 
             const typescriptServer = new TypescriptServer({
                 debug: false,
@@ -98,8 +78,6 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
                 sendMessage({ "file-changed": [filePath, eventType, itemType] });
             });
 
-            typescriptServer.start();
-
             typescriptServer.on('status-update', async (status) => {
                 await sendMessage({ 'status-update': [status] });
 
@@ -120,17 +98,15 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
                     }
                 }
             })
+
+            typescriptServer.start();
         }
 
         const shutdownHandler = async () => {
             if (server)
                 server.stop();
 
-            await rm(tsConfigDevFilePath, { force: true, recursive: true });
-        }
-
-        const shutdown = () => {
-            return;
+                await rm(tsConfigDevFilePath, { force: true, recursive: true });
         }
 
         const handleProcessOnMessage = async (message: TypescriptServerParentToChildMessage) => {
@@ -143,14 +119,20 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
             }
         }
 
+        const shutdown = (_signal: NodeJS.Signals) => {
+            
+        }
+
+        process.on('SIGINT', shutdown);
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
+        process.on('SIGKILL', shutdown);
         process.on('message', handleProcessOnMessage);
 
         await sendMessage({ 'status-update': ['WORKER:STARTED'] });
     } catch (error) {
         console.error(error);
 
-        process.exit(1);
+        // process.exit(1);
     }
 })()

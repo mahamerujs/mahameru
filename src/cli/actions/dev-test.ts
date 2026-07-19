@@ -7,6 +7,7 @@ export default function devTest({ rootPath, version: originalVersion }: { rootPa
 
     return async ({ }: { host: string; port: number }) => {
         try {
+            let isShuttingDown = false;
             const mahameru = new Mahameru({
                 rootPath,
                 dev: true,
@@ -17,6 +18,11 @@ export default function devTest({ rootPath, version: originalVersion }: { rootPa
             await mahameru.start();
 
             const shutdown = async (_signal: NodeJS.Signals) => {
+                if (isShuttingDown)
+                    return;
+
+                isShuttingDown = true;
+
                 await mahameru.shutdown();
 
                 process.exit(0);
@@ -26,8 +32,6 @@ export default function devTest({ rootPath, version: originalVersion }: { rootPa
             process.on('SIGTERM', shutdown);
         } catch (error) {
             console.error(error);
-
-            process.exit(1);
         }
     }
 }

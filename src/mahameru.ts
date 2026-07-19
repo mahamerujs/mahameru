@@ -1,11 +1,12 @@
 import Diatrema, { MahameruPlugin, type DiatremaOptions, diatremaDefaultConfig, type BasePluginOptions, createLogger, type Logger } from '@mahameru/diatrema';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server';
 import type { Ora } from 'ora';
+import type { TypescriptServerParentToChildMessage } from './workers/typescript-server';
 
 export type MahameruOptions = DiatremaOptions & {
     outputTypesDirPath: string
@@ -15,7 +16,7 @@ export type MahameruOptions = DiatremaOptions & {
 type MahameruGeneratorOptions = {
     dev: boolean;
     rootPath: string;
-    outputTypesDirPath: string
+    outputTypesDirPath: string;
 }
 
 const mahameruDefaultOptions: MahameruOptions = {
@@ -34,7 +35,7 @@ export class Mahameru {
     constructor(options?: Partial<MahameruOptions>, spinner?: Ora) {
         this._options = { ...mahameruDefaultOptions, ...options };
         this.logger = createLogger('Mahameru', this._options.debug);
-        this.spinner = spinner;
+        this.spinner = this._options.debug ? undefined : spinner;
         this.diatrema = new Diatrema(this._options);
     }
 
@@ -54,6 +55,7 @@ export class Mahameru {
 
     public async shutdown() {
         this.logger.debug('Shutting down...');
+        await this.typescriptServer.stop();
         await this.diatrema.shutdown();
         this.logger.debug('Shutting down... Done');
     }
@@ -86,8 +88,8 @@ export class Mahameru {
         spawn: async (onMessage?: (message: Partial<TypescriptServerEvents>) => Promise<void> | void) => {
             this.logger.debug('Spawning Typescript server...');
 
-            if (!onMessage) {
-                onMessage = (message) => {
+            if (!onMessage)
+                onMessage = async (message) => {
                     if (message["compile-error"]) {
                         if (!this.typescriptServer)
                             return;
@@ -117,16 +119,13 @@ export class Mahameru {
                         }
                     } else if (message['file-changed']) {
                         const [filePath, eventType, itemType] = message['file-changed'];
-                        // if (devServerInstance) {
-                        //     if (message.eventType === 'update')
-                        //         devServerInstance.sendMessage({ type: 'FILE_CHANGED', filePath: message.filePath, eventType: message.eventType });
-                        // }
-                        console.log('[TypescriptServer]', filePath, eventType, itemType);
+                        if (eventType === 'update') {
+                            await this.diatrema.devHRM(filePath);
+                        }
                     }
                 };
-            }
 
-            const childProcess = await new Promise<ChildProcess>(resolve => {
+            this.typescriptServer.process = await new Promise<ChildProcess>(resolve => {
                 const workerFilePath = join(this.options.rootPath, 'node_modules', 'mahameru', 'workers', 'typescript-server.js');
                 const child = spawn(process.execPath, [workerFilePath], {
                     cwd: this.options.rootPath,
@@ -144,6 +143,17 @@ export class Mahameru {
                     process.stderr.write(data);
                 });
 
+                const handleOnDisconnect = () => {
+                    this.logger.debug('disconnected');
+                }
+
+                const handleOnExit = (code: number | null, signal: NodeJS.Signals | null) => {
+                    this.logger.debug(`Typescript Server Child process mati mendadak! Code: ${code}, Signal: ${signal}`);
+                }
+
+                child.on('disconnect', handleOnDisconnect);
+                child.on('exit', handleOnExit);
+
                 child.on('message', (message: Partial<TypescriptServerEvents>) => {
                     onMessage(message);
 
@@ -151,17 +161,16 @@ export class Mahameru {
                         this.typescriptServer.status = message['status-update'][0];
 
                         if (this.typescriptServer.status === 'WORKER:STARTED') {
+                            child.off('disconnect', handleOnDisconnect);
+                            child.off('exit', handleOnExit);
+
                             resolve(child);
                         }
                     }
                 });
             });
 
-            this.typescriptServer.process = childProcess;
-
             this.logger.debug('Spawning Typescript server... Done');
-
-            return childProcess;
         },
         start: () => new Promise((resolve, reject) => {
             if (!this.typescriptServer.process) {
@@ -170,9 +179,24 @@ export class Mahameru {
                 return;
             }
 
+            const handleOnDisconnect = () => {
+                this.logger.debug('disconnected');
+            }
+
+            const handleOnExit = (code: number | null, signal: NodeJS.Signals | null) => {
+                this.logger.debug('Typescript Server Exit Code:', code, 'Signal:', signal);
+            }
+
+            this.typescriptServer.process.on('disconnect', handleOnDisconnect);
+            this.typescriptServer.process.on('exit', handleOnExit);
+
             const handleOnStarted = (message: Partial<TypescriptServerEvents>) => {
                 if (message['status-update'] && message['status-update'][0] === 'READY') {
                     this.typescriptServer.process!.off('message', handleOnStarted);
+                    setTimeout(() => {
+                        this.typescriptServer.process!.off('disconnect', handleOnDisconnect);
+                        this.typescriptServer.process!.off('exit', handleOnExit);
+                    }, 1000);
                     this.logger.debug('Starting Typescript server... Done');
 
                     resolve(true);
@@ -183,7 +207,7 @@ export class Mahameru {
 
             this.logger.debug('Starting Typescript server...');
 
-            this.typescriptServer.process.send({ type: 'START' });
+            this.typescriptServer.process.send({ type: 'START' } as TypescriptServerParentToChildMessage);
         }),
         stop: async () => {
             return new Promise((resolve, reject) => {
@@ -193,9 +217,13 @@ export class Mahameru {
                     return;
                 }
 
+                this.logger.debug('Stopping Typescript server...');
+
                 const timeout = setTimeout(() => {
                     if (this.spinner)
-                        this.spinner.text = 'Watcher process took too long to shutdown. Forcing kill...';
+                        this.spinner.text = 'Typescript server took too long to shutdown. Forcing kill...';
+
+                    this.logger.debug('Typescript server took too long to shutdown. Forcing kill...');
 
                     this.typescriptServer.process!.kill('SIGKILL');
                     resolve(false);
@@ -203,11 +231,12 @@ export class Mahameru {
 
                 this.typescriptServer.process.on('exit', () => {
                     clearTimeout(timeout);
+                    this.logger.debug('Stopping Typescript server... Done');
                     resolve(true);
                 });
 
                 if (this.typescriptServer.process.connected) {
-                    this.typescriptServer.process.send({ type: 'SHUTDOWN' });
+                    this.typescriptServer.process.send({ type: 'SHUTDOWN' } as TypescriptServerParentToChildMessage);
                 } else {
                     this.typescriptServer.process.kill('SIGINT');
                 }
@@ -408,7 +437,7 @@ export class Mahameru {
                     const module = await this.require<Record<'default', new (options?: BasePluginOptions, createLogger?: (name: string | string[], debug?: boolean) => Logger) => MahameruPlugin>>(this.options.moduleType, join(pluginDirPath, 'index.js'));
 
                     if (!module) {
-                        this.logger.debug(`Failed to load plugin: ${name}. Plugin not found`);
+                        this.logger.warn(`Failed to load plugin: ${name}. Plugin not found`);
 
                         continue;
                     }
@@ -417,7 +446,7 @@ export class Mahameru {
                         this.logger.debug(`Failed to load plugin: ${name}. No default export found`);
 
                     const Plugin = module.default;
-                    const pluginInstance = new Plugin({ debug: this._options.debug }, createLogger);
+                    const pluginInstance = new Plugin({ debug: this._options.debug, dev: this._options.dev }, createLogger);
                     const shortPluginName = name.replace('@mahameru/', '');
 
                     if (pluginInstance.generator) {
