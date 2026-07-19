@@ -51,7 +51,10 @@ const onSuccess = async () => {
 }
 
 rmSync('dist.tgz', { force: true, recursive: true });
-rmSync('dist', { force: true, recursive: true });
+
+if (process.env.NODE_ENV !== 'development') {
+    rmSync('dist', { force: true, recursive: true });
+}
 
 export default defineConfig({
     bundle: false,
@@ -64,7 +67,7 @@ export default defineConfig({
     sourcemap: true,
     dts: true,
     keepNames: true,
-    clean: true,
+    clean: process.env.NODE_ENV !== 'development',
     watch: process.env.NODE_ENV === 'development',
     shims: true,
     esbuildPlugins: [fixExtensionsPlugin()],

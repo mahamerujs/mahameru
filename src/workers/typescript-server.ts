@@ -37,7 +37,7 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         if (!process.send || typeof process.send !== 'function' || typeof process.send === 'undefined') {
             console.error('This script can only be run in a child process.');
 
-            // process.exit(1);
+            process.exit(1);
         }
 
         const rootPath = process.env.MAHAMERU__ROOT_PATH;
@@ -53,10 +53,10 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         const tsConfigFilePath = join(rootPath, 'tsconfig.json');
         let server: TypescriptServer | null = null;
         const startHandler = async () => {
-            await sendMessage({ "status-update": ['READY'] });
+            await sendMessage({ "status-update": ['STARTING'] });
 
             const typescriptServer = new TypescriptServer({
-                debug: false,
+                debug: process.env.MAHAMERU__DEBUG === 'true',
                 rootPath,
                 tsConfigFilePath,
                 tsConfigDevFilePath,
@@ -106,7 +106,7 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
             if (server)
                 server.stop();
 
-                await rm(tsConfigDevFilePath, { force: true, recursive: true });
+            await rm(tsConfigDevFilePath, { force: true, recursive: true });
         }
 
         const handleProcessOnMessage = async (message: TypescriptServerParentToChildMessage) => {
@@ -120,7 +120,7 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         }
 
         const shutdown = (_signal: NodeJS.Signals) => {
-            
+
         }
 
         process.on('SIGINT', shutdown);
@@ -132,7 +132,5 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
         await sendMessage({ 'status-update': ['WORKER:STARTED'] });
     } catch (error) {
         console.error(error);
-
-        // process.exit(1);
     }
 })()

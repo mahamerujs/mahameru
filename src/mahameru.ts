@@ -131,7 +131,9 @@ export class Mahameru {
                     cwd: this.options.rootPath,
                     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
                     env: {
-                        MAHAMERU__ROOT_PATH: this.options.rootPath
+                        MAHAMERU__ROOT_PATH: this.options.rootPath,
+                        MAHAMERU__ENV: 'development',
+                        MAHAMERU__DEBUG: this._options.debug ? 'true' : 'false'
                     }
                 });
 

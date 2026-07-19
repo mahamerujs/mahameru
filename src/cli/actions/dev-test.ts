@@ -15,8 +15,6 @@ export default function devTest({ rootPath, version: originalVersion }: { rootPa
                 moduleType: 'esm'
             })
 
-            await mahameru.start();
-
             const shutdown = async (_signal: NodeJS.Signals) => {
                 if (isShuttingDown)
                     return;
@@ -30,6 +28,8 @@ export default function devTest({ rootPath, version: originalVersion }: { rootPa
 
             process.on('SIGINT', shutdown);
             process.on('SIGTERM', shutdown);
+
+            await mahameru.start();
         } catch (error) {
             console.error(error);
         }

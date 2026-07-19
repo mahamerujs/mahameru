@@ -102,11 +102,11 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
                 if ((diagnostic.code === 6194 || diagnostic.code === 6193) && !this.isInitialBuildDone) {
                     this.isInitialBuildDone = true;
 
-                    this.tscAlias(async () => {
-                        setImmediate(() => {
+                    this.tscAlias(() => {
+                        setTimeout(() => {
                             this.emit('status-update', 'READY');
                             this._status = 'READY';
-                        });
+                        }, 1000);
                     }).catch(err => this.logger.error('Error running initial tscAlias:', err));
                 }
             }
