@@ -1,4 +1,6 @@
 dist/
 node_modules/
+*.log
 *.tgz
-package-lock.json
+.env
+.env.local
