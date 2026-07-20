@@ -1,18 +1,43 @@
-# MahameruJS
+<div align="center">
+  <img src="https://mahamerujs.bintvn.co/mahamerujs-logo.svg" alt="MahameruJS Logo" width="120" height="120" style="border-radius: 20%;" onerror="this.src='https://placehold.co/120x120?text=M'; this.onerror=null;">
 
-[![npm version](https://img.shields.io/npm/v/mahameru.svg)](https://www.npmjs.com/package/mahameru)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  <h1>MahameruJS</h1>
 
-> ⚠️ **IMPORTANT NOTICE:** This package is currently under active development and is **not yet ready for production use**. 
+  <p><strong>A minimal, blazing fast, and developer-friendly Node.js framework ecosystem for building robust HTTP servers.</strong></p>
+
+  <p>
+    <a href="https://npmjs.com/package/mahameru"><img src="https://img.shields.io/npm/v/mahameru.svg?style=flat-square&color=5b31eb" alt="npm version"></a>
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square&color=5b31eb" alt="License">
+    <img src="https://img.shields.io/badge/node-%3E%3D20.6.0-brightgreen?style=flat-square" alt="Node Version">
+    <img src="https://img.shields.io/badge/monorepo-npm%20workspaces-blue?style=flat-square" alt="Monorepo Tool">
+  </p>
+
+  <p>
+    <a href="https://sociabuzz.com/mahamerujs/tribe"><strong>Sponsor/Donation for the Project</strong></a> •
+    <a href="https://discord.gg/7PNmMxykSF"><strong>Discord</strong></a> •
+    <a href="https://discord.gg/7PNmMxykSF"><strong>Contributing</strong></a>
+  </p>
+</div>
 
 ---
 
-## 🚧 Work in Progress
+> ### ⚠️ Experimental & Early Development Stage
+> This repository is currently in its **early development stage (Alpha/Experimental)**. Internal architecture, features, and the **Public API are subject to change at any time without prior notice** until the project reaches a stable `1.0.0` release. Use in production environments at your own risk.
 
-**mahameru** is still in its early stages. APIs, features, and configurations are subject to drastic changes without prior notice. 
+---
 
-* **Current Status:** Experimental / Alpha
-* **Production Ready:** No
+## ✨ Overview
+
+**MahameruJS** is designed to provide an intuitive, modular, and high-performance backend development experience. Much like the volcanic force within Mount Mahameru, this ecosystem decouples the core conduit engine, routing layer, command-line interfaces, and utilities into independent packages that seamlessly integrate through a lean monorepo architecture.
+
+### Key Features
+* 🚀 **Blazing Fast Performance:** A minimalist core engine for the lowest possible overhead.
+* 📦 **Modular Monorepo Architecture:** Codebase neatly decoupled into specialized internal packages.
+* 🗺️ **File-based Routing:** Automatic directory structures translated dynamically into HTTP routes.
+* 🔌 **Flexible Plugin System:** Attach required capabilities (like the HTTP Server) only when needed.
+* 🛡️ **Full TypeScript Support:** Strong static typing for end-to-end code safety from day one.
+
+---
 
 ### Installing for testing
 If you want to experiment with it or contribute, you can install it via npm:
@@ -29,142 +54,14 @@ and follow the prompts.
 
 That's it!
 
-## Module conventions
+---
 
-Mahameru discovers modules from the directory configured as `modulesPath`, typically:
+## Documentation
 
-- `src/modules/<name>/service.ts`
-- `src/modules/<name>/controller.ts`
+Visit [https://mahamerujs.bintvn.co/docs](https://mahamerujs.bintvn.co/docs) to view the full documentation.
 
-During production runtime, the same convention is resolved from build output in `dist/` as:
+## Contributing
 
-- `dist/modules/<name>/service.js`
-- `dist/modules/<name>/controller.js`
-
-Each module folder may contain:
-
-- `service.ts` for container-registered services
-- `controller.ts` for container-registered controllers
-
-If both files exist, Mahameru registers the service first and injects it into the controller constructor. If only `controller.ts` exists, the controller is still registered without service injection.
-
-> **Breaking change:** The legacy naming convention `<name>.service.ts` and `<name>.controller.ts` is no longer supported.
-
-## Global middleware
-
-Mahameru supports a convention-based global middleware:
-
-- `src/middleware.ts`
-- fallback `src/middleware.js`
-
-The file must export a default middleware function with the signature below:
-
-```ts
-import type { MahameruMiddleware } from 'mahameru';
-
-const middleware: MahameruMiddleware = async (_context, _isProtectedRoute, next) => {
-    try {
-        // Middleware logic...
-
-        return await next();
-    } catch (error) {
-        throw error;
-    }
-};
-
-export default middleware;
-```
-
-Example with route-specific conditions:
-
-```ts
-import type { MahameruMiddleware, ProtectedRoute } from 'mahameru';
-import { authValidation } from './helpers/auth-middleware';
-
-export const protectedRoutes: ProtectedRoute<MahameruGeneratedRoutes> = [
-    '/user',
-    '/me'
-];
-
-const middleware: MahameruMiddleware = async (context, isProtectedRoute, next) => {
-    try {
-        const { request, container } = context;
-
-        // Example login using query
-        // http://localhost:3000/user?auth={"username":"bintan","secret":"1234"}
-        if (isProtectedRoute)
-            await authValidation(request, container);
-
-        // Other middleware logic...
-
-        return await next();
-    } catch (error) {
-        throw error;
-    }
-};
-
-export default middleware;
-```
-
-Because this middleware is global, filtering for specific routes should be done inside the middleware itself with `if` conditions using `path` and `method`.
-
-## Error handler
-
-Mahameru supports a convention-based global error handler:
-
-- `src/error.ts`
-- fallback `src/error.js`
-
-The file must export a default function:
-
-```ts
-import { type MahameruErrorHandler, MahameruResponse } from "mahameru";
-import { NotFoundError, UnauthorizedError } from "./common/error";
-
-const errorHandler: MahameruErrorHandler = async ({ error }) => {
-    if (error instanceof UnauthorizedError || error instanceof NotFoundError)
-        return MahameruResponse.json({
-            success: false,
-            error: error.code,
-            message: error.message
-        }, { status: error.statusCode });
-
-    console.error(error);
-
-    return MahameruResponse.json({
-        success: false,
-        error: 'Internal Server Error'
-    }, { status: 500 });
-}
-
-export default errorHandler
-
-```
-
-The handler receives the request context plus `error`, and may either return a custom response directly or call `next()` to use Mahameru's fallback internal server response.
-
-## Not found handler
-
-Mahameru supports a convention-based custom not-found handler:
-
-- `src/routes/not-found.ts`
-- fallback `src/routes/not-found.js`
-
-This file follows the same route-style method exports as other route files:
-
-```ts
-import { MahameruResponse, type RouteHandler } from 'mahameru'
-
-export const GET: RouteHandler = (request) => {
-    return MahameruResponse.json({
-        success: false,
-        error: 'NOT_FOUND',
-        message: 'Route not found',
-        path: request.path
-    }, { status: 404 });
-}
-```
-
-The not-found handler is only used when no route matches the incoming request. For v1, it does not run through the global middleware pipeline.
+Contributions to MahameruJS are welcome and highly appreciated. For more info please join our [Discord](https://discord.gg/7PNmMxykSF) Server to make sure you have a smooth experience contributing to MahameruJS.
 
 > **Note:** The **mahameru** package is still in its early stages and is not yet ready for production use. Please use it at your own risk and be aware of the limitations and potential issues.
