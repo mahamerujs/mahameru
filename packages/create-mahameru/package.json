@@ -1,0 +1,51 @@
+{
+  "name": "create-mahameru",
+  "version": "0.0.14",
+  "description": "Initialize a new MahameruJS Project",
+  "main": "./dist/cli.js",
+  "bin": {
+    "create-mahameru": "./dist/cli.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "clean": "rimraf dist",
+    "build": "npm run clean && webpack",
+    "build:install": "npm run build && npm i -g .\\dist.tgz"
+  },
+  "keywords": [
+    "mahameru",
+    "mahamerujs",
+    "create-mahameru",
+    "cli",
+    "scaffold",
+    "starter",
+    "template",
+    "project-generator",
+    "nodejs",
+    "http-server"
+  ],
+  "author": "Bintan <hello@bintvn.co>",
+  "license": "ISC",
+  "files": [
+    "dist/bin.js"
+  ],
+  "devDependencies": {
+    "@octokit/types": "^16.0.0",
+    "@types/node": "^26.0.0",
+    "@types/webpack-node-externals": "^3.0.4",
+    "boxen": "^8.0.1",
+    "commander": "^15.0.0",
+    "giget": "^3.3.0",
+    "inquirer": "^14.0.2",
+    "ora": "^9.4.1",
+    "picocolors": "^1.1.1",
+    "rimraf": "^6.1.3",
+    "terser-webpack-plugin": "^5.6.1",
+    "ts-loader": "^9.6.2",
+    "type-fest": "^5.7.0",
+    "typescript": "^6.0.3",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
