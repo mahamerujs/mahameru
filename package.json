@@ -1,5 +1,5 @@
 {
-  "name": "mahamerujs-monorepo",
+  "name": "mahamerujs",
   "private": true,
   "workspaces": [
     "packages/*"
