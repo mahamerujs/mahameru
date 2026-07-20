@@ -1,9 +1,6 @@
 {
   "name": "mahamerujs",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -16,5 +13,5 @@
     "@changesets/cli": "^2.31.1",
     "turbo": "^2.10.5"
   },
-  "packageManager": "npm@11.18.0"
+  "packageManager": "pnpm@11.15.1"
 }

@@ -42,7 +42,7 @@
     "node": ">=20.6.0"
   },
   "peerDependencies": {
-    "@mahameru/diatrema": "^0.0.7"
+    "@mahameru/diatrema": "workspace:*"
   },
   "dependencies": {
     "commander": "^15.0.0",
@@ -53,7 +53,7 @@
     "tsc-alias": "^1.9.1"
   },
   "devDependencies": {
-    "@mahameru/diatrema": "^0.0.7",
+    "@mahameru/diatrema": "workspace:*",
     "@types/node": "^26.0.1",
     "@types/prompts": "^2.4.9",
     "cross-env": "^10.1.0",

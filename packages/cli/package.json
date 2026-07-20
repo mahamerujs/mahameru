@@ -8,8 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "clean": "rimraf dist",
-    "build": "npm run clean && webpack",
-    "build:install": "npm run build && npm i -g .\\dist\\dist.tgz"
+    "build": "pnpm run clean && webpack",
+    "build:install": "pnpm run build && pnpm i -g .\\dist\\dist.tgz"
   },
   "keywords": [
     "mahameruJS",

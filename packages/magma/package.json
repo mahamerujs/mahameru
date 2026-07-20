@@ -34,10 +34,10 @@
   "author": "Bintan <hello@bintvn.co>",
   "license": "ISC",
   "peerDependencies": {
-    "@mahameru/diatrema": "^0.0.7"
+    "@mahameru/diatrema": "workspace:*"
   },
   "devDependencies": {
-    "@mahameru/diatrema": "^0.0.7",
+    "@mahameru/diatrema": "workspace:*",
     "@types/node": "^26.1.0",
     "cross-env": "^10.1.0",
     "esbuild-fix-imports-plugin": "^1.0.23",
