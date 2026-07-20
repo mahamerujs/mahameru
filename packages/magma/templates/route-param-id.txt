@@ -1,0 +1,17 @@
+import type { RouteHandler } from "@mahameru/magma"
+
+export const GET: RouteHandler = ({ request, container, params }) => {
+    return container.modules.{{nameCamelCase}}.controller.get{{namePascalCase}}ById(request, params.id)
+}
+
+export const PATCH: RouteHandler = async ({ request, container, params }) => {
+    return container.modules.{{nameCamelCase}}.controller.update{{namePascalCase}}(request, params.id)
+}
+
+export const PUT: RouteHandler = async ({ request, container, params }) => {
+    return container.modules.{{nameCamelCase}}.controller.update{{namePascalCase}}(request, params.id)
+}
+
+export const DELETE: RouteHandler = ({ request, container, params }) => {
+    return container.modules.{{nameCamelCase}}.controller.delete{{namePascalCase}}(request, params.id)
+}

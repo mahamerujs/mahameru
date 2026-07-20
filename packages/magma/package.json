@@ -1,0 +1,48 @@
+{
+  "name": "@mahameru/magma",
+  "version": "0.0.5",
+  "description": "Official HTTP server plugin for Mahameru JS framework, providing fast and minimalist routing capabilities.",
+  "mahameru": {
+    "name": "magma",
+    "type": "plugin"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "build": "tsup --config tsup.config.ts && node ./scripts/postbuild.js",
+    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/postbuild.js"
+  },
+  "keywords": [
+    "node",
+    "framework",
+    "mahameru",
+    "mahamerujs",
+    "http-server",
+    "https-server",
+    "web-server"
+  ],
+  "author": "Bintan <hello@bintvn.co>",
+  "license": "ISC",
+  "peerDependencies": {
+    "@mahameru/diatrema": "^0.0.7"
+  },
+  "devDependencies": {
+    "@mahameru/diatrema": "^0.0.7",
+    "@types/node": "^26.1.0",
+    "cross-env": "^10.1.0",
+    "esbuild-fix-imports-plugin": "^1.0.23",
+    "tsup": "^8.5.1",
+    "type-fest": "^5.8.0",
+    "typescript": "^6.0.3"
+  }
+}
