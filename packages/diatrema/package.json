@@ -16,8 +16,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "build": "tsup --config tsup.config.ts && node ./scripts/postbuild.js",
-    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/postbuild.js",
-    "preinstall": "node ./scripts/preinstall.js"
+    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/postbuild.js"
   },
   "keywords": [
     "node",
