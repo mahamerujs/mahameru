@@ -1,0 +1,7 @@
+{
+  "name": "mahamerujs-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}
