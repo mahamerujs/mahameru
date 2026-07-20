@@ -1,0 +1,53 @@
+import { type MagmaContainer, type MagmaRequest, MagmaResponse } from "@mahameru/magma";
+import type { {{namePascalCase}} } from "./service";
+
+export default class {{namePascalCase}}Controller {
+    constructor(protected readonly container: MagmaContainer) { }
+
+    getAll{{namePascalCase}}() {
+        const data = this.container.modules.{{nameCamelCase}}.service.getAll()
+
+        return MagmaResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    get{{namePascalCase}}ById(_request: MagmaRequest, id: string) {
+        const data = this.container.modules.{{nameCamelCase}}.service.getOneById(id)
+
+        return MagmaResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    async create{{namePascalCase}}(request: MagmaRequest) {
+        const {{nameCamelCase}}: {{namePascalCase}} = await request.json()
+        const data = this.container.modules.{{nameCamelCase}}.service.create({{nameCamelCase}})
+
+        return MagmaResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    delete{{namePascalCase}}(_request: MagmaRequest, id: string) {
+        const data = this.container.modules.{{nameCamelCase}}.service.deleteById(id)
+
+        return MagmaResponse.json({
+            success: true,
+            data
+        })
+    }
+
+    async update{{namePascalCase}}(request: MagmaRequest, id: string) {
+        const {{nameCamelCase}}: {{namePascalCase}} = await request.json()
+        const data = this.container.modules.{{nameCamelCase}}.service.updateById(id, {{nameCamelCase}})
+
+        return MagmaResponse.json({
+            success: true,
+            data
+        })
+    }
+}
