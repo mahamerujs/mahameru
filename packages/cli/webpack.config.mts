@@ -105,7 +105,7 @@ const config: webpack.Configuration[] = [
                         delete packageJson.scripts;
 
                         writeFileSync(path.resolve(__dirname, 'dist/package.json'), JSON.stringify(packageJson, null, 2));
-                        cpSync(path.resolve(__dirname, '..', 'pm-dashboard', 'dist'), path.resolve(__dirname, 'dist', 'mpm'), { recursive: true });
+                        // cpSync(path.resolve(__dirname, '..', 'pm-dashboard', 'dist'), path.resolve(__dirname, 'dist', 'mpm'), { recursive: true });
                         copyFileSync(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'));
                         execSync('npm pack', { stdio: 'inherit', cwd: path.resolve(__dirname, 'dist') });
                         renameSync(path.resolve(__dirname, 'dist', `mahameru-cli-${version}.tgz`), path.resolve(__dirname, 'dist', 'dist.tgz'));

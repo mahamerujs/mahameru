@@ -5,11 +5,16 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
     "change": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1"
-  }
+    "@changesets/cli": "^2.31.1",
+    "turbo": "^2.10.5"
+  },
+  "packageManager": "npm@11.18.0"
 }
