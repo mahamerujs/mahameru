@@ -153,9 +153,6 @@ importers:
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.1
-      cross-env:
-        specifier: ^10.1.0
-        version: 10.1.0
       esbuild-fix-imports-plugin:
         specifier: ^1.0.23
         version: 1.0.23
@@ -168,18 +165,16 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+    publishDirectory: dist
 
   packages/magma:
     devDependencies:
       '@mahameru/diatrema':
         specifier: workspace:*
-        version: link:../diatrema
+        version: link:../diatrema/dist
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.1
-      cross-env:
-        specifier: ^10.1.0
-        version: 10.1.0
       esbuild-fix-imports-plugin:
         specifier: ^1.0.23
         version: 1.0.23
@@ -192,6 +187,7 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+    publishDirectory: dist
 
   packages/mahameru:
     dependencies:
@@ -216,16 +212,13 @@ importers:
     devDependencies:
       '@mahameru/diatrema':
         specifier: workspace:*
-        version: link:../diatrema
+        version: link:../diatrema/dist
       '@types/node':
         specifier: ^26.0.1
         version: 26.1.1
       '@types/prompts':
         specifier: ^2.4.9
         version: 2.4.9
-      cross-env:
-        specifier: ^10.1.0
-        version: 10.1.0
       esbuild-fix-imports-plugin:
         specifier: ^1.0.23
         version: 1.0.23
@@ -307,9 +300,6 @@ packages:
   '@discoveryjs/json-ext@1.1.0':
     resolution: {integrity: sha512-Xc3VhU02wqZ1HvHRJUwL09HkZSTvidqY5Ya0NXBSYOxAp+Ln9dcJr9fySI+CkONzP3PekQo9WdzCv0PGER/mOA==}
     engines: {node: '>=14.17.0'}
-
-  '@epic-web/invariant@1.0.0':
-    resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
 
   '@esbuild/aix-ppc64@0.27.7':
     resolution: {integrity: sha512-EKX3Qwmhz1eMdEJokhALr0YiD0lhQNwDqkPYyPhiSwKrh7/4KRjQc04sZ8db+5DVVnZ1LmbNDI1uAMPEUBnQPg==}
@@ -1310,11 +1300,6 @@ packages:
 
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
-
-  cross-env@10.1.0:
-    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
-    engines: {node: '>=20'}
-    hasBin: true
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -2525,8 +2510,6 @@ snapshots:
 
   '@discoveryjs/json-ext@1.1.0': {}
 
-  '@epic-web/invariant@1.0.0': {}
-
   '@esbuild/aix-ppc64@0.27.7':
     optional: true
 
@@ -3305,11 +3288,6 @@ snapshots:
       vary: 1.1.2
 
   create-require@1.1.1: {}
-
-  cross-env@10.1.0:
-    dependencies:
-      '@epic-web/invariant': 1.0.0
-      cross-spawn: 7.0.6
 
   cross-spawn@7.0.6:
     dependencies:

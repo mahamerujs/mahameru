@@ -1,4 +1,4 @@
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import pc from "picocolors";
 import { diatremaDefaultConfig } from "@mahameru/diatrema";
 import { rm } from "node:fs/promises";
@@ -6,12 +6,7 @@ import { formatTypescriptError } from "../../utils/format-typescript-error";
 import { printCliBanner } from "../../utils/printCliBanner";
 import { devEnvironmentCheck } from "../../utils/dev-environment-check";
 import ora from "ora";
-import { fileURLToPath } from "node:url";
-import { fork } from "node:child_process";
-import type { TsErrorReport } from "../../server/mahameru-dev-server";
 import { buildScript } from "../scripts/build";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default function build({ rootPath, version }: { rootPath: string; version: string }) {
     return async () => {

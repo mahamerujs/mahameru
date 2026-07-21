@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 export function loadEnvironmentVariables(dev: boolean) {
     const defaultEnvFilePath = join(process.cwd(), '.env');

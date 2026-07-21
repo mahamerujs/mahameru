@@ -1,9 +1,6 @@
 import { Mahameru } from "../../mahameru";
 
-let version = '0.0.0';
-
-export default function devTest({ rootPath, version: originalVersion }: { rootPath: string; version: string }) {
-    version = originalVersion;
+export default function devTest({ rootPath }: { rootPath: string; version: string }) {
 
     return async ({ }: { host: string; port: number }) => {
         try {

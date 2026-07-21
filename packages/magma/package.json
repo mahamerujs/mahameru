@@ -18,9 +18,9 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit --project tsconfig.json",
-    "build": "tsup --config tsup.config.ts && node ./scripts/postbuild.js",
-    "dev": "cross-env NODE_ENV=development tsup --config tsup.config.ts && node ./scripts/postbuild.js"
+    "typecheck": "tsc",
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "keywords": [
     "node",
@@ -33,13 +33,15 @@
   ],
   "author": "Bintan <hello@bintvn.co>",
   "license": "ISC",
+  "publishConfig": {
+    "directory": "dist"
+  },
   "peerDependencies": {
     "@mahameru/diatrema": "workspace:*"
   },
   "devDependencies": {
     "@mahameru/diatrema": "workspace:*",
     "@types/node": "^26.1.0",
-    "cross-env": "^10.1.0",
     "esbuild-fix-imports-plugin": "^1.0.23",
     "tsup": "^8.5.1",
     "type-fest": "^5.8.0",

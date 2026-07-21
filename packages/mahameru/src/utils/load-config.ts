@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { type MahameruConfigResult, mahameruDefaultConfig } from "../config";
 import pc from "picocolors";

@@ -2,7 +2,7 @@
   "name": "mahamerujs",
   "private": true,
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "turbo watch dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "change": "changeset",

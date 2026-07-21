@@ -1,23 +1,21 @@
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { rm } from "node:fs/promises";
 import { devEnvironmentCheck } from "../../utils/dev-environment-check";
-import ora, { type Ora } from "ora";
-import { ChildProcess, fork, spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { printServerReadyString } from "../../utils/printServerReady";
-import cli from "../../utils/cli";
+import ora from "ora";
+import { ChildProcess, spawn } from "node:child_process";
+// import { fileURLToPath } from "node:url";
+// import { printServerReadyString } from "../../utils/printServerReady";
+// import cli from "../../utils/cli";
 import type { TypescriptServerParentToChildMessage } from "../../workers/typescript-server";
-import type { DevServerChildProcessMessage, DevServerParentProcessMessage, DevServerStatus } from "../../workers/dev-server";
-import pc from 'picocolors';
-import { MAHAMERU_TITLE } from "../../constants";
+// import type { DevServerChildProcessMessage, DevServerParentProcessMessage, DevServerStatus } from "../../workers/dev-server";
+// import pc from 'picocolors';
+// import { MAHAMERU_TITLE } from "../../constants";
 import type { TypescriptServerEvents, TypescriptServerStatus } from "../../server/typescript-server";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// const __dirname = dirname(fileURLToPath(import.meta.url));
 let appState: { port: number, host: string; mode: "development" | "production" } | null = null;
-let version = '0.0.0';
 
-export default function dev({ rootPath, version: originalVersion }: { rootPath: string; version: string }) {
-    version = originalVersion;
+export default function dev({ rootPath, }: { rootPath: string; version: string }) {
 
     return async ({ }: { host: string; port: number }) => {
         let shuttingDown = false;
@@ -229,94 +227,94 @@ const typeCheckingWatcher = async (rootPath: string, handleOnMessage: (message: 
     };
 }
 
-type ReturnTypeDevServer = {
-    status: "STOPPED";
-    child: ChildProcess;
-    sendMessage: (message: DevServerParentProcessMessage) => Promise<true>;
-    start: () => Promise<{
-        port?: number;
-        host?: string;
-        mode: "development" | "production";
-    }>;
-};
+// type ReturnTypeDevServer = {
+//     status: "STOPPED";
+//     child: ChildProcess;
+//     sendMessage: (message: DevServerParentProcessMessage) => Promise<true>;
+//     start: () => Promise<{
+//         port?: number;
+//         host?: string;
+//         mode: "development" | "production";
+//     }>;
+// };
 
-const devServer = async (rootPath: string, handleOnMessage: (message: DevServerChildProcessMessage) => void, _version: string, host: string, port: number): Promise<ReturnTypeDevServer> => {
-    let status: DevServerStatus = 'STOPPED';
-    const child = await new Promise<ChildProcess>(resolve => {
-        const devServerPath = join(__dirname, '..', '..', 'workers', 'dev-server.js');
-        const child = spawn(process.execPath, [
-            devServerPath
-        ], {
-            cwd: rootPath,
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-            env: {
-                ...process.env,
-                MAHAMERU__DEV: 'true',
-                MAHAMERU__ROOT_PATH: rootPath,
-                MAHAMERU__HTTP_LISTEN_HOST: host,
-                MAHAMERU__HTTP_LISTEN_PORT: String(port)
-            }
-        });
+// const devServer = async (rootPath: string, handleOnMessage: (message: DevServerChildProcessMessage) => void, _version: string, host: string, port: number): Promise<ReturnTypeDevServer> => {
+//     let status: DevServerStatus = 'STOPPED';
+//     const child = await new Promise<ChildProcess>(resolve => {
+//         const devServerPath = join(__dirname, '..', '..', 'workers', 'dev-server.js');
+//         const child = spawn(process.execPath, [
+//             devServerPath
+//         ], {
+//             cwd: rootPath,
+//             stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+//             env: {
+//                 ...process.env,
+//                 MAHAMERU__DEV: 'true',
+//                 MAHAMERU__ROOT_PATH: rootPath,
+//                 MAHAMERU__HTTP_LISTEN_HOST: host,
+//                 MAHAMERU__HTTP_LISTEN_PORT: String(port)
+//             }
+//         });
 
-        child.stdout?.on('data', (data) => {
-            process.stdout.write(data);
-        });
+//         child.stdout?.on('data', (data) => {
+//             process.stdout.write(data);
+//         });
 
-        child.stderr?.on('data', (data) => {
-            process.stderr.write(data);
-        });
+//         child.stderr?.on('data', (data) => {
+//             process.stderr.write(data);
+//         });
 
-        child.on('message', (message: DevServerChildProcessMessage) => {
-            handleOnMessage(message);
+//         child.on('message', (message: DevServerChildProcessMessage) => {
+//             handleOnMessage(message);
 
-            if (message.type === 'STATUS') {
-                status = message.data;
+//             if (message.type === 'STATUS') {
+//                 status = message.data;
 
-                if (status === 'RUNNING') {
-                    resolve(child);
-                }
-            }
-        });
-    });
+//                 if (status === 'RUNNING') {
+//                     resolve(child);
+//                 }
+//             }
+//         });
+//     });
 
-    const sendMessage = (message: DevServerParentProcessMessage) => new Promise<true>((resolve, reject) => {
-        child.send(message, (error) => error ? reject(error) : resolve(true));
-    });
+//     const sendMessage = (message: DevServerParentProcessMessage) => new Promise<true>((resolve, reject) => {
+//         child.send(message, (error) => error ? reject(error) : resolve(true));
+//     });
 
-    return {
-        status,
-        child,
-        sendMessage,
-        start: () => new Promise(resolve => {
-            const handleOnStarted = (message: DevServerChildProcessMessage) => {
-                if (message.type === 'READY') {
-                    child.off('message', handleOnStarted);
+//     return {
+//         status,
+//         child,
+//         sendMessage,
+//         start: () => new Promise(resolve => {
+//             const handleOnStarted = (message: DevServerChildProcessMessage) => {
+//                 if (message.type === 'READY') {
+//                     child.off('message', handleOnStarted);
 
-                    resolve(message.data);
-                }
-            }
+//                     resolve(message.data);
+//                 }
+//             }
 
-            child.on('message', handleOnStarted);
+//             child.on('message', handleOnStarted);
 
-            sendMessage({ type: 'START' });
-        })
-    };
-}
+//             sendMessage({ type: 'START' });
+//         })
+//     };
+// }
 
-function screenUpdate(body: string | string[] | undefined, spinner?: Ora, showHeader: boolean = false) {
-    const header = `${pc.bold(MAHAMERU_TITLE)} ${pc.dim(`v${version}`)}`;
-    const content: string[] = []
+// function screenUpdate(body: string | string[] | undefined, spinner?: Ora, showHeader: boolean = false) {
+//     const header = `${pc.bold(MAHAMERU_TITLE)} ${pc.dim(`v${version}`)}`;
+//     const content: string[] = []
 
-    if (appState)
-        content.push(...[printServerReadyString({ mode: appState.mode, host: appState.host, port: appState.port, version }), '']);
+//     if (appState)
+//         content.push(...[printServerReadyString({ mode: appState.mode, host: appState.host, port: appState.port, version }), '']);
 
-    if (body)
-        if (Array.isArray(body)) {
-            content.push(...body);
-        } else {
-            content.push(body);
-        }
+//     if (body)
+//         if (Array.isArray(body)) {
+//             content.push(...body);
+//         } else {
+//             content.push(body);
+//         }
 
-    cli.cursor.hide();
-    cli.updateScreen(showHeader ? header : undefined, content, spinner);
-}
+//     cli.cursor.hide();
+//     cli.updateScreen(showHeader ? header : undefined, content, spinner);
+// }

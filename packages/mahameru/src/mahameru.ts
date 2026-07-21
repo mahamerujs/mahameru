@@ -1,5 +1,5 @@
 import Diatrema, { MahameruPlugin, type DiatremaOptions, diatremaDefaultConfig, type BasePluginOptions, createLogger, type Logger } from '@mahameru/diatrema';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -118,7 +118,7 @@ export class Mahameru {
                             }
                         }
                     } else if (message['file-changed']) {
-                        const [filePath, eventType, itemType] = message['file-changed'];
+                        const [filePath, eventType, _itemType] = message['file-changed'];
                         if (eventType === 'update') {
                             await this.diatrema.devHRM(filePath);
                         }

@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { devEnvironmentCheck } from "../utils/dev-environment-check";
 import { rm } from "node:fs/promises";
-import TypescriptServer, { type TypescriptServerEvents, type TypescriptServerStatus } from "../server/typescript-server";
+import TypescriptServer, { type TypescriptServerEvents } from "../server/typescript-server";
 import pc from "picocolors";
 
 export type TypescriptServerParentToChildMessage =

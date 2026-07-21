@@ -1,24 +1,8 @@
 {
+  "extends": "../tsconfig/base.json",
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/.tsbuildinfo",
-    "esModuleInterop": true,
-    "incremental": true,
-    "types": [
-      "node"
-    ],
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "rootDir": "./src",
+    "outDir": "./dist"
   },
   "include": [
     "./src/**/*.ts"

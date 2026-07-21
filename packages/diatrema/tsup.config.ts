@@ -1,30 +1,35 @@
 /// <reference types="node" />
 
-import { copyFile, cp, readFile, rename, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { defineConfig } from 'tsup'
 import type { PackageJson } from 'type-fest'
 import { fixExtensionsPlugin } from 'esbuild-fix-imports-plugin';
-import { rmSync } from 'node:fs';
+
+const isDev = process.env.npm_lifecycle_event === 'dev';
 
 function replaceDistPath(packageObj: PackageJson): PackageJson {
     function toPlainObject(target: unknown): unknown {
         if (target === null || typeof target !== 'object') {
-            if (typeof target === 'string' && target.startsWith('./dist/'))
-                return target.replace('./dist/', './');
+            if (typeof target === 'string') {
+                if (target.startsWith('./dist/')) {
+                    return target.replace('./dist/', './');
+                } else if (target.startsWith('dist/')) {
+                    return target.replace('dist/', '');
+                }
+            }
 
             return target;
         }
 
-        if (Array.isArray(target)) {
+        if (Array.isArray(target))
             return (target as unknown[]).map(toPlainObject);
-        }
 
         const plainObj: Record<string, unknown> = {};
         const keys = Object.getOwnPropertyNames(target as object);
 
         for (const key of keys) {
             const descriptor = Object.getOwnPropertyDescriptor(target as object, key);
+
             if (descriptor) {
                 const value = descriptor.get ? (target as any)[key] : descriptor.value;
                 plainObj[key] = toPlainObject(value);
@@ -45,17 +50,19 @@ const onSuccess = async () => {
         packageJson.module = './index.js';
         packageJson.types = './index.d.ts';
 
+        delete packageJson.publishConfig;
+        delete packageJson.scripts;
+
         packageJson = replaceDistPath(packageJson);
 
         await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2), 'utf-8');
         await copyFile('README.md', 'dist/README.md');
     } catch (error) {
         console.error(error);
+
+        process.exit(1);
     }
 }
-
-rmSync('dist.tgz', { force: true, recursive: true });
-rmSync('dist', { force: true, recursive: true });
 
 export default defineConfig({
     bundle: false,
@@ -66,10 +73,9 @@ export default defineConfig({
     splitting: false,
     cjsInterop: true,
     sourcemap: true,
-    dts: true,
+    dts: !isDev,
     keepNames: true,
-    clean: process.env.NODE_ENV !== 'development',
-    watch: process.env.NODE_ENV === 'development',
+    clean: !isDev,
     shims: true,
     esbuildPlugins: [fixExtensionsPlugin()],
     onSuccess
