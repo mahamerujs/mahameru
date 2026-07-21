@@ -5,7 +5,7 @@ import TerserPlugin from 'terser-webpack-plugin';
 import boxen from 'boxen';
 import stripAnsi from 'strip-ansi';
 import nodeExternal from 'webpack-node-externals';
-import { copyFile, copyFileSync, readFileSync, renameSync, writeFileSync } from 'fs';
+import { copyFileSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
