@@ -33,6 +33,9 @@
   ],
   "author": "Bintan <hello@bintvn.co>",
   "license": "ISC",
+  "engines": {
+    "node": ">=20.6.0"
+  },
   "publishConfig": {
     "directory": "dist"
   },

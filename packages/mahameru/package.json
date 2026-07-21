@@ -41,6 +41,9 @@
   "engines": {
     "node": ">=20.6.0"
   },
+  "publishConfig": {
+    "directory": "dist"
+  },
   "peerDependencies": {
     "@mahameru/diatrema": "workspace:*"
   },
