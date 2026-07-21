@@ -5,12 +5,12 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "noEmit": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "types": [
       "node"
     ],
+    "composite": true,
     "declaration": false,
     "sourceMap": false,
     "strict": true,
