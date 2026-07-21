@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "turbo watch dev",
+    "dev:diatrema": "turbo watch dev --filter=@mahameru/diatrema...",
+    "dev:magma": "turbo watch dev --filter=@mahameru/magma...",
+    "dev:mahameru": "turbo watch dev --filter=mahameru...",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "change": "changeset",
