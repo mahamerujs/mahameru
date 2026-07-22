@@ -1,4 +1,7 @@
 .turbo/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 dist/
 node_modules/
 *.log
