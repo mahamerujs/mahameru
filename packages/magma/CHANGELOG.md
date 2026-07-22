@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.7
+
+### Patch Changes
+
+- Fix get version on package.json
+
 ## 0.0.6
 
 ### Patch Changes
