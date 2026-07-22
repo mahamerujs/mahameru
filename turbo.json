@@ -1,34 +1,32 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
   "tasks": {
-    "typecheck": {
-      "cache": false,
-      "persistent": false,
-      "outputs": []
-    },
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+      "dependsOn": ["^build", "build:js", "build:types"],
+      "outputs": ["dist/**"]
     },
     "build:js": {
-      "outputs": [
-        "dist/**/*.js",
-        "dist/**/*.cjs",
-        "dist/**/*.map"
-      ]
+      "dependsOn": ["^build:js"],
+      "inputs": ["src/**/*.ts", "src/**/*.js", "tsup.config.ts", "package.json"],
+      "outputs": ["dist/**"]
     },
     "build:types": {
-      "outputs": [
-        "dist/**/*.d.ts",
-        "dist/**/*.d.ts.map"
-      ]
+      "dependsOn": ["^build:types"],
+      "inputs": ["src/**/*.ts", "tsconfig.json", "../../tsconfig.base.json"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build:types"],
+      "inputs": ["src/**/*.ts", "tsconfig.json", "../../tsconfig.base.json"],
+      "cache": true
     },
     "lint": {
+      "inputs": ["src/**/*.ts", "src/**/*.js", "../../eslint.config.mjs", "../../.prettierrc"],
       "outputs": []
+    },
+    "clean": {
+      "cache": false
     },
     "dev:js": {
       "cache": false,
