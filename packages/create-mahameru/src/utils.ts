@@ -1,10 +1,12 @@
+/* eslint-disable no-console */
 import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import type { PackageJson } from 'type-fest';
 import type { Endpoints } from '@octokit/types';
 import ora from 'ora';
 import pc from 'picocolors';
+import { spawn } from 'node:child_process';
 
 type FullRepo = Endpoints['GET /repos/{owner}/{repo}']['response']['data'];
 
@@ -17,7 +19,7 @@ export async function readPackageJsonFile(rootPath?: string): Promise<PackageJso
     const string = await readFile(path, 'utf-8');
 
     return JSON.parse(string) as PackageJson;
-  } catch (error) {
+  } catch {
     throw new Error('Failed to read package.json file');
   }
 }
@@ -31,7 +33,7 @@ export async function writePackageJsonFile(packageJson: PackageJson, targetPath?
 
   try {
     await writeFile(path, JSON.stringify(packageJson, null, 2));
-  } catch (error) {
+  } catch {
     throw new Error('Failed to write package.json file');
   }
 }
@@ -51,7 +53,7 @@ export async function getGithubPublicRepo(username: string) {
   let repos = (await response.json()) as (FullRepo & { packageJson: PackageJson })[];
 
   repos = repos.filter(
-    (repo: any) => repo.private === false && repo.name.startsWith('mahameru-template-'),
+    (repo) => repo.private === false && repo.name.startsWith('mahameru-template-'),
   );
 
   for (const repo of repos) {
@@ -86,4 +88,88 @@ export function clearScreen(): void {
   if (process.platform === 'win32') {
     process.stdout.write('\x1Bc');
   }
+}
+
+export function getManualGlobalInstallCommand() {
+  return process.platform === 'win32'
+    ? 'npm install -g @mahameru/cli'
+    : 'sudo npm install -g @mahameru/cli';
+}
+
+export function getNpmRunner() {
+  const npmExecPath = process.env.npm_execpath;
+
+  if (npmExecPath && extname(npmExecPath) === '.js' && existsSync(npmExecPath)) {
+    return {
+      command: process.execPath,
+      args: [npmExecPath],
+    };
+  }
+
+  const nodeDir = dirname(process.execPath);
+  const candidatePaths = [
+    join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    join(nodeDir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ];
+
+  for (const candidatePath of candidatePaths) {
+    if (existsSync(candidatePath)) {
+      return {
+        command: process.execPath,
+        args: [candidatePath],
+      };
+    }
+  }
+
+  return {
+    command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+    args: [],
+  };
+}
+
+export async function ensureGlobalCliInstalled() {
+  const globalInstallSpinner = ora('Installing @mahameru/cli globally...\n').start();
+  const npmRunner = getNpmRunner();
+
+  try {
+    await runCommand(npmRunner.command, [...npmRunner.args, 'install', '-g', '@mahameru/cli']);
+    globalInstallSpinner.succeed(pc.green('@mahameru/cli installed globally successfully!'));
+    return true;
+  } catch {
+    globalInstallSpinner.fail(pc.red('Failed to install @mahameru/cli globally automatically.'));
+
+    console.log(pc.yellow('\nWarning: Permission denied or network issue encountered.'));
+
+    if (process.platform === 'win32') {
+      console.log(
+        'Please install the CLI manually from Command Prompt / PowerShell as Administrator:',
+      );
+    } else {
+      console.log('Please install the CLI manually using:');
+    }
+
+    console.log(pc.bold(pc.white(`   ${getManualGlobalInstallCommand()}`)));
+
+    return false;
+  }
+}
+
+export function runCommand(command: string, args: string[], cwd?: string) {
+  return new Promise<void>((resolve, reject) => {
+    const childProcess = spawn(command, args, {
+      cwd,
+      stdio: 'ignore',
+      shell: false,
+    });
+
+    childProcess.on('error', reject);
+    childProcess.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`${command} ${args.join(' ')} exited with code ${code ?? 'unknown'}`));
+    });
+  });
 }

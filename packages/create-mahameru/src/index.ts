@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 import { Command } from 'commander';
 import { version } from '../package.json';
@@ -8,13 +9,15 @@ import path, { join } from 'node:path';
 import { downloadTemplate } from 'giget';
 import ora from 'ora';
 import pc from 'picocolors';
-import { execSync, spawn } from 'node:child_process';
-import {
-  clearScreen,
-  getGithubPublicRepo,
-  readPackageJsonFile,
-  writePackageJsonFile,
-} from './utils';
+import { execSync } from 'node:child_process';
+import os from 'os';
+import crypto from 'node:crypto';
+import { clearScreen, getNpmRunner, runCommand, writePackageJsonFile } from './utils';
+import { cp, readdir, readFile } from 'node:fs/promises';
+import { PackageJson } from 'type-fest';
+
+const repoUuid = crypto.randomUUID();
+const tempDir = os.tmpdir();
 
 (async () => {
   try {
@@ -45,15 +48,15 @@ import {
   }
 })();
 
-function isCliInstalled() {
-  try {
-    execSync('mahameru -v', { stdio: 'ignore' });
+// function isCliInstalled() {
+//   try {
+//     execSync('mahameru -v', { stdio: 'ignore' });
 
-    return true;
-  } catch {
-    return false;
-  }
-}
+//     return true;
+//   } catch {
+//     return false;
+//   }
+// }
 
 function isGitInstalled() {
   try {
@@ -63,63 +66,6 @@ function isGitInstalled() {
   } catch {
     return false;
   }
-}
-
-function getManualGlobalInstallCommand() {
-  return process.platform === 'win32'
-    ? 'npm install -g @mahameru/cli'
-    : 'sudo npm install -g @mahameru/cli';
-}
-
-function getNpmRunner() {
-  const npmExecPath = process.env.npm_execpath;
-
-  if (npmExecPath && path.extname(npmExecPath) === '.js' && existsSync(npmExecPath)) {
-    return {
-      command: process.execPath,
-      args: [npmExecPath],
-    };
-  }
-
-  const nodeDir = path.dirname(process.execPath);
-  const candidatePaths = [
-    path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-    path.join(nodeDir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    if (existsSync(candidatePath)) {
-      return {
-        command: process.execPath,
-        args: [candidatePath],
-      };
-    }
-  }
-
-  return {
-    command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    args: [],
-  };
-}
-
-function runCommand(command: string, args: string[], cwd?: string) {
-  return new Promise<void>((resolve, reject) => {
-    const childProcess = spawn(command, args, {
-      cwd,
-      stdio: 'ignore',
-      shell: false,
-    });
-
-    childProcess.on('error', reject);
-    childProcess.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(new Error(`${command} ${args.join(' ')} exited with code ${code ?? 'unknown'}`));
-    });
-  });
 }
 
 async function installProjectDependencies(
@@ -167,7 +113,7 @@ async function installProjectDependencies(
     }
 
     return true;
-  } catch (error) {
+  } catch {
     console.error(pc.red('Failed to install project dependencies.'));
     console.log(pc.yellow(`\nPlease enter the folder and run:`));
     console.log(pc.yellow(`\tnpm install ${depsToInstall.join(' ')}`));
@@ -177,38 +123,53 @@ async function installProjectDependencies(
   }
 }
 
-async function ensureGlobalCliInstalled() {
-  const globalInstallSpinner = ora('Installing @mahameru/cli globally...\n').start();
-  const npmRunner = getNpmRunner();
-
-  try {
-    await runCommand(npmRunner.command, [...npmRunner.args, 'install', '-g', '@mahameru/cli']);
-    globalInstallSpinner.succeed(pc.green('@mahameru/cli installed globally successfully!'));
-    return true;
-  } catch {
-    globalInstallSpinner.fail(pc.red('Failed to install @mahameru/cli globally automatically.'));
-
-    console.log(pc.yellow('\nWarning: Permission denied or network issue encountered.'));
-
-    if (process.platform === 'win32') {
-      console.log(
-        'Please install the CLI manually from Command Prompt / PowerShell as Administrator:',
-      );
-    } else {
-      console.log('Please install the CLI manually using:');
-    }
-
-    console.log(pc.bold(pc.white(`   ${getManualGlobalInstallCommand()}`)));
-
-    return false;
-  }
-}
-
 async function onInit() {
   clearScreen();
   console.log(`${pc.bold(pc.cyan('▲ MahameruJS'))} ${pc.dim(`Project Initializer v${version}`)}\n`);
 
-  const repos = await getGithubPublicRepo('mahamerujs');
+  const tempRepoDir = join(tempDir, repoUuid);
+  const { dir: repoTempDir } = await downloadTemplate(`github:mahamerujs/templates`, {
+    dir: tempRepoDir,
+    force: true,
+  });
+
+  const result = await readdir(repoTempDir, { withFileTypes: true });
+
+  if (result.length === 0) {
+    console.error(pc.red('This repo is empty.'));
+
+    process.exit(1);
+  }
+
+  const templates: {
+    name: string;
+    title: string;
+    description: string;
+    dir: string;
+    packageJson: PackageJson;
+  }[] = [];
+
+  for (const file of result) {
+    if (file.isDirectory()) {
+      try {
+        const packageJson = JSON.parse(
+          await readFile(join(repoTempDir, file.name, 'package.json'), 'utf-8'),
+        ) as unknown as PackageJson & { title: string | undefined };
+
+        if (!packageJson.name || !packageJson.description || !packageJson.title) continue;
+
+        templates.push({
+          name: packageJson.name,
+          title: packageJson.title,
+          description: packageJson.description,
+          dir: join(repoTempDir, file.name),
+          packageJson,
+        });
+      } catch {
+        continue;
+      }
+    }
+  }
 
   const answers = await inquirer
     .prompt([
@@ -226,9 +187,9 @@ async function onInit() {
         type: 'select',
         name: 'selectedTemplate',
         message: 'Choose a template:',
-        choices: repos.map((repo) => ({
-          name: `${repo.packageJson.title} - ${repo.packageJson.description}`,
-          value: repo.packageJson.name,
+        choices: templates.map((template) => ({
+          name: `${template.title} - ${template.description}`,
+          value: template.name,
         })),
       },
     ])
@@ -238,7 +199,7 @@ async function onInit() {
       throw error;
     });
 
-  const selectedTemplate = repos.find((item) => item.packageJson.name === answers.selectedTemplate);
+  const selectedTemplate = templates.find((item) => item.name === answers.selectedTemplate);
 
   if (!selectedTemplate) {
     console.log(pc.red(`\nError: Template ${answers.selectedTemplate} not found!`));
@@ -257,12 +218,9 @@ async function onInit() {
   const downloadSpinner = ora('Downloading template...\n').start();
 
   try {
-    await downloadTemplate(`github:${selectedTemplate.full_name}#main`, {
-      dir: targetDir,
-      force: true,
-    });
+    await cp(selectedTemplate.dir, targetDir, { recursive: true });
 
-    const packageJson = await readPackageJsonFile(targetDir);
+    const packageJson = selectedTemplate.packageJson;
 
     packageJson.name = answers.projectName;
     packageJson.version = '0.0.0';
@@ -315,23 +273,13 @@ async function onInit() {
     gitSpinner.succeed(pc.green('Git repository initialized successfully!'));
   }
 
-  let cliInstalled = isCliInstalled();
-
   console.log('\n---\n');
   console.log(pc.green(`Project ${pc.bold(answers.projectName)} was created successfully!`));
-
-  if (!cliInstalled) {
-    // cliInstalled = await ensureGlobalCliInstalled();
-  }
 
   console.log(`\nTo get started, run the following commands:`);
   console.log(pc.yellow(`   cd ${answers.projectName}`));
 
-  if (cliInstalled) {
-    console.log(pc.yellow('   mahameru dev'));
-  } else {
-    console.log(pc.yellow('   npm run dev'));
-  }
+  console.log(pc.yellow('   npm run dev'));
 
   console.log('---\n');
 
