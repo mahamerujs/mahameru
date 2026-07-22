@@ -17,6 +17,7 @@ import type {
   RouteItem,
 } from './types';
 import { createLogger, type Logger } from '@mahameru/diatrema';
+import { createRequire } from 'node:module';
 
 /**
  * Container options
@@ -29,6 +30,8 @@ export type ContainerOptions = {
   appDirPath: string;
   moduleType: 'commonjs' | 'esm';
 };
+
+const requireModule = createRequire(import.meta.url);
 
 export class Container {
   protected _initialized = false;
@@ -467,10 +470,10 @@ export class Container {
 
     if (type === 'commonjs') {
       if (noCache) {
-        delete require.cache[resolvedFilePath];
+        delete requireModule.cache[resolvedFilePath];
       }
 
-      return require(resolvedFilePath) as T;
+      return requireModule(resolvedFilePath) as T;
     }
 
     let fileUrl = pathToFileURL(resolvedFilePath).href;
