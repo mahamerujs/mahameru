@@ -27,7 +27,20 @@ export default class {{namePascalCase}}Service {
   }
 
   getOneById(id: string) {
-    return this.{{nameCamelCase}}s.get(id);
+    const found = this.{{nameCamelCase}}s.get(id);
+
+    if (!found)
+      throw MagmaResponse.json(
+        {
+          success: false,
+          message: `{{namePascalCase}} with id ${id} not found`,
+        },
+        {
+          status: 404,
+        },
+      );
+
+    return found;
   }
 
   create({{nameCamelCase}}: Omit<{{namePascalCase}}, 'id'>) {
@@ -63,15 +76,13 @@ export default class {{namePascalCase}}Service {
   updateById(id: string, {{nameCamelCase}}: {{namePascalCase}}): {{namePascalCase}} {
     const existingData = this.getOneById(id);
 
-    if (!existingData) throw new Error(`{{namePascalCase}} with id ${id} not found`);
+    this.{{nameCamelCase}}s.set(existingData.id, {{nameCamelCase}});
 
-    this.{{nameCamelCase}}s.set(id, {{nameCamelCase}});
-
-    return this.{{nameCamelCase}}s.get(id)!;
+    return this.getOneById(id);
   }
 
   deleteById(id: string) {
-    if (!this.getOneById(id)) throw new Error(`{{namePascalCase}} with id ${id} not found`);
+    const existingData = this.getOneById(id);
 
     return this.{{nameCamelCase}}s.delete(id);
   }

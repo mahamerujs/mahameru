@@ -374,13 +374,15 @@ export default class Magma extends MahameruPlugin<MagmaOptions> {
         status: 200,
         isProtectedRoute: false,
       };
+
       const magmaResponse = middlewareHandler
         ? await this.runMiddlewarePipeline(middlewareHandler, context, () => handler(context))
         : await handler(context);
 
       return this.sendResponse(response, magmaResponse);
     } catch (error: unknown) {
-      console.error(error);
+      if (error instanceof MagmaResponse) return this.sendResponse(response, error);
+
       const context: MagmaContext = {
         request: magmaRequest,
         container: this.container.magmaContainer,
@@ -542,9 +544,9 @@ export default class Magma extends MahameruPlugin<MagmaOptions> {
     handler: () => Promise<MagmaResponse> | MagmaResponse,
   ) {
     context.isProtectedRoute = this.validateProtectedRoute(context.method, context.path);
-    const response = await middleware(context, async () => {
-      const nextResponse = await handler();
 
+    const nextResponse = await handler();
+    const response = await middleware(context, async () => {
       return this.normalizeMagmaResponse(
         nextResponse,
         'Route handlers and next() must resolve to MagmaResponse.',
