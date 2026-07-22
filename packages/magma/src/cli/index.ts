@@ -8,8 +8,7 @@ import { MagmaGenerator } from '..';
 import { join } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { toKebabCase, toPascalCase, toTitleCase } from '../helpers';
-import { toCamelCase } from '../helper';
+import { toKebabCase, toPascalCase, toTitleCase, toCamelCase } from '../helpers';
 
 const rootPath = process.env.INIT_CWD || process.cwd();
 const outputTypesDirPath = join(rootPath, '.types', 'magma');
