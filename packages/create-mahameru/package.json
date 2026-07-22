@@ -1,6 +1,6 @@
 {
   "name": "create-mahameru",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Initialize a new MahameruJS Project",
   "main": "./dist/cli.js",
   "bin": {
