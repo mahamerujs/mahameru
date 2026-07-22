@@ -6,6 +6,7 @@ import { EventEmitter } from './event-emitter';
 import { createLogger, type Logger } from './logger';
 
 import type { MahameruPlugin } from './mahameru-plugin';
+import { createRequire } from 'node:module';
 
 export type DiatremaEvents = {
   ready: [data: { mode: 'development' | 'production'; port?: number; host?: string }];
@@ -21,6 +22,8 @@ export type DiatremaOptions = {
   initiatorFilePath?: string;
   moduleType: 'commonjs' | 'esm';
 };
+
+const requireModule = createRequire(import.meta.url);
 
 export const diatremaDefaultConfig: DiatremaOptions = {
   dev: false,
@@ -132,10 +135,10 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
 
     if (type === 'commonjs') {
       if (noCache) {
-        delete require.cache[resolvedFilePath];
+        delete requireModule.cache[resolvedFilePath];
       }
 
-      return require(resolvedFilePath) as T;
+      return requireModule(resolvedFilePath) as T;
     }
 
     let fileUrl = pathToFileURL(resolvedFilePath).href;
