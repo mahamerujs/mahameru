@@ -6,11 +6,6 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "emitDeclarationOnly": true
   },
-  "include": [
-    "src/**/*"
-, "src/mahameru-plugin.ts"  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "src/mahameru-plugin.ts"],
+  "exclude": ["node_modules", "dist"]
 }
