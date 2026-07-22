@@ -672,11 +672,16 @@ type MagmaGeneratorOptions = {
   dev?: boolean;
 };
 
+const magmaGeneratorDefaultOptions: MagmaGeneratorOptions = {
+  debug: false,
+  dev: false,
+};
+
 export class MagmaGenerator extends Generator<MagmaGeneratorOptions> {
   protected rootPath = process.env.INIT_CWD || process.cwd();
 
-  constructor(options: Partial<MagmaGeneratorOptions>) {
-    super(options);
+  constructor(options?: Partial<MagmaGeneratorOptions>) {
+    super(options ?? magmaGeneratorDefaultOptions);
     this.logger = createLogger(['Magma', 'MagmaGenerator'], this._options.debug);
   }
 
@@ -689,10 +694,10 @@ export class MagmaGenerator extends Generator<MagmaGeneratorOptions> {
     const template = `import { type RouteHandler, MahameruResponse } from '@mahameru/magma';
 
 export const GET: RouteHandler = () => {
-    return MahameruResponse.json({
-        success: true,
-        message: 'Welcome to MahameruJS!'
-    })
+  return MahameruResponse.json({
+    success: true,
+    message: 'Welcome to MahameruJS!',
+  })
 }
 `;
 
@@ -728,7 +733,7 @@ export const GET: RouteHandler = () => {
     const modulesDirPath = join(sourceDirPath, 'modules').replace(/\\/g, '/');
     const modulesDirPathGlob = `${modulesDirPath}/**/*.ts`;
     const files = globSync(modulesDirPathGlob);
-    this.logger.info('files', files);
+    this.logger.debug('files', files);
     let importStatements = '';
 
     const interfaceStructure: { [module: string]: { [type: string]: string } } = {};
