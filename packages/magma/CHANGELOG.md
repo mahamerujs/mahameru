@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.9
+
+### Patch Changes
+
+- Fix magma service template bug
+
 ## 0.0.8
 
 ### Patch Changes
