@@ -45,6 +45,9 @@ const onSuccess = async () => {
   try {
     const packageJsonString = await readFile('package.json', 'utf-8');
     let packageJson = JSON.parse(packageJsonString) as PackageJson;
+    packageJson.bin = {
+      magma: './cli/index.js',
+    };
     packageJson.main = './index.cjs';
     packageJson.module = './index.js';
     packageJson.types = './index.d.ts';

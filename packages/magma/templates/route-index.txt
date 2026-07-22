@@ -1,9 +1,9 @@
-import type { RouteHandler } from '@mahameru/magma'
+import type { RouteHandler } from '@mahameru/magma';
 
 export const GET: RouteHandler = ({ container }) => {
-    return container.modules.{{nameCamelCase}}.controller.getAll{{namePascalCase}}()
-}
+  return container.modules.{{nameCamelCase}}.controller.getAll{{namePascalCase}}();
+};
 
 export const POST: RouteHandler = async ({ request, container }) => {
-    return container.modules.{{nameCamelCase}}.controller.create{{namePascalCase}}(request)
-}
+  return container.modules.{{nameCamelCase}}.controller.create{{namePascalCase}}(request);
+};

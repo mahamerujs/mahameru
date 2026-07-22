@@ -2,6 +2,9 @@
   "name": "@mahameru/magma",
   "version": "0.0.5",
   "description": "Official HTTP server plugin for Mahameru JS framework, providing fast and minimalist routing capabilities.",
+  "bin": {
+    "magma": "./dist/index.js"
+  },
   "mahameru": {
     "name": "magma",
     "type": "plugin"
@@ -48,6 +51,10 @@
   },
   "peerDependencies": {
     "@mahameru/diatrema": "workspace:*"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@mahameru/diatrema": "workspace:*",

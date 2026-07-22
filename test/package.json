@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "mahameru dev:test",
     "build": "mahameru build",
-    "start": "mahameru start"
+    "start": "mahameru start",
+    "magma": "magma"
   },
   "dependencies": {
     "@mahameru/magma": "workspace:*",
