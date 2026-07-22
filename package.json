@@ -2,7 +2,7 @@
   "name": "mahamerujs",
   "private": true,
   "scripts": {
-    "prepare": "pnpm build:mahameru && pnpm rebuild --ignore-scripts",
+    "prepare": "pnpm build && pnpm --filter test rebuild",
     "dev": "turbo watch dev:js dev:types",
     "dev:diatrema": "turbo watch dev:js dev:types --filter=@mahameru/diatrema...",
     "dev:magma": "turbo watch dev:js dev:types --filter=@mahameru/magma... --filter=mahameru",
