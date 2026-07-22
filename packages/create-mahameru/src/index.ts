@@ -220,7 +220,7 @@ async function onInit() {
   try {
     await cp(selectedTemplate.dir, targetDir, { recursive: true });
 
-    const packageJson = selectedTemplate.packageJson;
+    const packageJson = { ...selectedTemplate.packageJson };
 
     packageJson.name = answers.projectName;
     packageJson.version = '0.0.0';
