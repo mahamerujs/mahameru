@@ -1,9 +1,10 @@
-import Diatrema, { MahameruError } from "@mahameru/diatrema";
+import Diatrema from "@mahameru/diatrema";
 import type { MahameruIPCMessageChild } from "../../types";
 import { printServerReady } from "../../utils/printServerReady";
 import { isPortAvailable } from "../../utils/free-port-finder";
 import { loadConfig } from "../../utils/load-config";
 import { join } from "node:path";
+import MahameruError from "../../mahameru-error";
 
 export default function start({ rootPath, version }: { rootPath: string; version: string }) {
     return async ({ host, port }: { host: string; port: number }) => {

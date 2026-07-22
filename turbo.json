@@ -1,6 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "typecheck": {
+      "cache": false,
+      "persistent": false,
+      "outputs": []
+    },
     "build": {
       "dependsOn": [
         "^build"
@@ -9,14 +14,29 @@
         "dist/**"
       ]
     },
-    "dev": {
+    "build:js": {
+      "outputs": [
+        "dist/**/*.js",
+        "dist/**/*.cjs",
+        "dist/**/*.map"
+      ]
+    },
+    "build:types": {
+      "outputs": [
+        "dist/**/*.d.ts",
+        "dist/**/*.d.ts.map"
+      ]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "dev:js": {
       "cache": false,
       "persistent": true
     },
-    "typecheck": {
+    "dev:types": {
       "cache": false,
-      "persistent": false,
-      "outputs": []
+      "persistent": true
     }
   }
 }

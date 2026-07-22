@@ -1,4 +1,4 @@
-import type Diatrema from "./diatrema";
+import { type Diatrema } from "./diatrema";
 import { type Logger } from "./logger";
 
 export interface BasePluginOptions {

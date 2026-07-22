@@ -2,10 +2,8 @@
 
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { defineConfig } from 'tsup'
-import type { PackageJson } from 'type-fest'
 import { fixExtensionsPlugin } from 'esbuild-fix-imports-plugin';
-
-const isDev = process.env.npm_lifecycle_event === 'dev';
+import type { PackageJson } from 'type-fest'
 
 function replaceDistPath(packageObj: PackageJson): PackageJson {
     function toPlainObject(target: unknown): unknown {
@@ -64,19 +62,20 @@ const onSuccess = async () => {
     }
 }
 
-export default defineConfig({
-    bundle: false,
-    entry: ['src/**/*.ts'],
-    format: ['cjs', 'esm'],
-    outDir: 'dist',
-    tsconfig: 'tsconfig.json',
-    splitting: false,
-    cjsInterop: true,
-    sourcemap: true,
-    dts: !isDev,
-    keepNames: true,
-    clean: !isDev,
-    shims: true,
-    esbuildPlugins: [fixExtensionsPlugin()],
-    onSuccess
-})
+export default defineConfig((options) => {
+    return {
+        bundle: false,
+        entry: ['src/**/*.ts'],
+        format: ['cjs', 'esm'],
+        outDir: 'dist',
+        tsconfig: 'tsconfig.json',
+        splitting: false,
+        cjsInterop: true,
+        sourcemap: true,
+        dts: false,
+        clean: !options.watch,
+        shims: true,
+        esbuildPlugins: [fixExtensionsPlugin()],
+        onSuccess
+    }
+});

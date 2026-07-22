@@ -40,7 +40,7 @@ export class Container {
     }
 
     get notFoundHandler() {
-        const found = this._registry.values().find((item) => item.type === 'not-found');
+        const found = Array.from(this._registry.values()).find((item) => item.type === 'not-found');
 
         return found?.item || {};
     }
@@ -50,15 +50,15 @@ export class Container {
     }
 
     get middlewareHandler(): MagmaMiddleware | undefined {
-        return this._registry.values().find((item) => item.type === 'middleware')?.item;
+        return Array.from(this._registry.values()).find((item) => item.type === 'middleware')?.item;
     }
 
     get errorHandler(): ErrorHandler | undefined {
-        return this._registry.values().find((item) => item.type === 'error-handler')?.item;
+        return Array.from(this._registry.values()).find((item) => item.type === 'error-handler')?.item;
     }
 
     get protectedRoutes(): ProtectedRoute {
-        return this._registry.values().find((item) => item.type === 'protected-route')?.item || [];
+        return Array.from(this._registry.values()).find((item) => item.type === 'protected-route')?.item || [];
     }
 
     get initialized() {
@@ -125,8 +125,7 @@ export class Container {
         if (filePath.includes('\\src\\'))
             filePath = filePath.replace('\\src\\', `\\.mahameru\\`);
 
-
-        const found = this._registry.values().find((containerItem) => containerItem.path === filePath);
+        const found = Array.from(this._registry.values()).find((containerItem) => containerItem.path === filePath);
 
         this.logger.debug('onDevHRM', filePath);
 

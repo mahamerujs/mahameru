@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/cli",
+    },
+    {
+      "path": "./packages/create-mahameru",
+    },
+    {
+      "path": "./packages/diatrema",
+    },
+    {
+      "path": "./packages/magma",
+    },
+    {
+      "path": "./packages/mahameru",
+    }
+  ]
+}

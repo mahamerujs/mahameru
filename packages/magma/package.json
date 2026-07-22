@@ -12,15 +12,21 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "build:js": "tsup",
+    "build:types": "tsc",
+    "build": "pnpm build:js && pnpm build:types",
+    "dev:js": "tsup --watch",
+    "dev:types": "tsc --watch --preserveWatchOutput",
+    "dev": "pnpm dev:js && pnpm dev:types"
   },
   "keywords": [
     "node",
@@ -33,11 +39,12 @@
   ],
   "author": "Bintan <hello@bintvn.co>",
   "license": "ISC",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
   "engines": {
     "node": ">=20.6.0"
-  },
-  "publishConfig": {
-    "directory": "dist"
   },
   "peerDependencies": {
     "@mahameru/diatrema": "workspace:*"
@@ -45,9 +52,6 @@
   "devDependencies": {
     "@mahameru/diatrema": "workspace:*",
     "@types/node": "^26.1.0",
-    "esbuild-fix-imports-plugin": "^1.0.23",
-    "tsup": "^8.5.1",
-    "type-fest": "^5.8.0",
-    "typescript": "^6.0.3"
+    "type-fest": "^5.8.0"
   }
 }

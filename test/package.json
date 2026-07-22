@@ -1,0 +1,24 @@
+{
+  "name": "test",
+  "description": "",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "mahameru dev:test",
+    "build": "mahameru build",
+    "start": "mahameru start"
+  },
+  "dependencies": {
+    "@mahameru/magma": "workspace:*",
+    "mahameru": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3"
+  },
+  "allowScripts": {
+    "@mahameru/diatrema": true,
+    "@mahameru/magma": true,
+    "mahameru": true
+  }
+}

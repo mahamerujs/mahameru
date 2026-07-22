@@ -1,4 +1,4 @@
-import Diatrema, { MahameruPlugin, type DiatremaOptions, diatremaDefaultConfig, type BasePluginOptions, createLogger, type Logger } from '@mahameru/diatrema';
+import { Diatrema, MahameruPlugin, type DiatremaOptions, diatremaDefaultConfig, type BasePluginOptions, createLogger, type Logger } from '@mahameru/diatrema';
 import { join } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';

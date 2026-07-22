@@ -1,11 +1,11 @@
 import { join } from 'node:path';
-
-import { EventEmitter } from "./event-emitter";
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import type { InitiatorHandler, Instances } from './types';
-import type { MahameruPlugin } from './mahameru-plugin';
+
+import { EventEmitter } from "./event-emitter";
 import { createLogger, type Logger } from './logger';
+
+import type { MahameruPlugin } from './mahameru-plugin';
 
 export type DiatremaEvents = {
     ready: [data: { mode: "development" | "production"; port?: number; host?: string; }];
@@ -37,12 +37,11 @@ export const diatremaDefaultConfig: DiatremaOptions = {
 /**
  * Main Diatrema class that orchestrates the application lifecycle.
  */
-export default class Diatrema extends EventEmitter<DiatremaEvents> {
+export class Diatrema extends EventEmitter<DiatremaEvents> {
     protected _initialized = false;
     protected _isShuttingDown = false;
     protected _plugins = new Map<string, MahameruPlugin<any>>();
     protected logger: Logger;
-    public instances: Instances = {};
     public readonly options: DiatremaOptions;
 
     constructor(options?: Partial<DiatremaOptions>) {
@@ -76,8 +75,6 @@ export default class Diatrema extends EventEmitter<DiatremaEvents> {
         try {
             if (this._initialized)
                 return;
-
-            await this.loadInitiator();
 
             for (const plugin of this._plugins.values()) {
                 plugin.setDiatrema(this);
@@ -126,20 +123,6 @@ export default class Diatrema extends EventEmitter<DiatremaEvents> {
 
         this._initialized = false;
         this.logger.debug('Shutting down... Done');
-    }
-
-    protected async loadInitiator() {
-        if (!this.options.initiatorFilePath)
-            return;
-
-        const result = await this.require<Record<'default', InitiatorHandler>>(this.options.moduleType, this.options.initiatorFilePath);
-
-        if (result) {
-            const handler = this.getDefaultExport<InitiatorHandler>(result, this.options.initiatorFilePath);
-
-            this.instances = await handler();
-            this.logger.debug(`Initiator loaded successfully. Found ${Object.keys(this.instances).length} instances.`);
-        }
     }
 
     protected async require<T extends Record<string, unknown> = Record<string, unknown>>(type: "commonjs" | "esm", resolvedFilePath: string): Promise<T | undefined> {
