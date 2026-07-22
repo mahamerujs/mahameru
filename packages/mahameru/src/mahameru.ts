@@ -513,7 +513,7 @@ export class Mahameru {
 
           this.logger.debug(`Loaded plugin ${name} from ${pluginDirPath}`);
         } catch (err) {
-          this.logger.debug(`Failed to load plugin: ${name}`, err);
+          this.logger.error(`Failed to load plugin: ${name}`, err);
         }
       }
 
