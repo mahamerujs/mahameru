@@ -86,8 +86,8 @@ const start = async (rootPath: string, host: string, port: number) => {
     await sendMessage({ type: 'STATUS', data: 'RUNNING' });
 
     const rootPath = process.env.MAHAMERU__ROOT_PATH;
-    let host = process.env.MAHAMERU__HTTP_LISTEN_HOST;
-    let port = process.env.MAHAMERU__HTTP_LISTEN_PORT
+    const host = process.env.MAHAMERU__HTTP_LISTEN_HOST;
+    const port = process.env.MAHAMERU__HTTP_LISTEN_PORT
       ? Number(process.env.MAHAMERU__HTTP_LISTEN_PORT)
       : undefined;
 

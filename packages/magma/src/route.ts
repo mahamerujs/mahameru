@@ -83,7 +83,7 @@ export class Route {
     const rawReqUrl = rawReqPath.replace(/\/+/g, '/');
     const matchUrl = this.normalizePathForMatching(rawReqUrl);
 
-    let { matchedRoute, matchResult } = this.findMatchedRoute(matchUrl);
+    const { matchedRoute, matchResult } = this.findMatchedRoute(matchUrl);
 
     if (!matchedRoute || !matchResult)
       return {

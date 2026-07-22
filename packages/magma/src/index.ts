@@ -517,7 +517,7 @@ export default class Magma extends MahameruPlugin<MagmaOptions> {
 
     response.writeHead(magmaResponse.status);
 
-    let responseBody: any;
+    let responseBody: unknown;
 
     if (
       typeof magmaResponse.body === 'string' ||
@@ -699,7 +699,7 @@ export const GET: RouteHandler = () => {
     await writeFile(routesIndexFilePath, template, 'utf-8');
   }
 
-  protected async _generate(): Promise<Record<string, any>> {
+  protected async _generate(): Promise<Record<string, unknown>> {
     if (!this._outputTypesDirPath) {
       this.logger.warn('No outputTypesDirPath specified. Skipping types generation.');
 
@@ -732,8 +732,7 @@ export const GET: RouteHandler = () => {
     let importStatements = '';
 
     const interfaceStructure: { [module: string]: { [type: string]: string } } = {};
-    const modules: any[] = [];
-
+    const modules: Record<string, string>[] = [];
     const exportDefaultClassRegex = /export\s+default\s+class\s+([A-Za-z0-9_]+)/;
 
     for (const filePath of files) {

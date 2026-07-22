@@ -6,6 +6,9 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { readdir, readFile } from 'node:fs/promises';
+import { createLogger } from '@mahameru/diatrema';
+
+const logger = createLogger('Mahameru', true);
 
 export default function generate({ rootPath, version }: { rootPath: string; version: string }) {
   return async function () {
@@ -15,11 +18,12 @@ export default function generate({ rootPath, version }: { rootPath: string; vers
     const availablePluginsPaths = knownPluginsPaths.filter((pluginPath) => existsSync(pluginPath));
 
     if (availablePluginsPaths.length === 0) {
-      console.log('No plugins available for generation');
+      logger.info('No plugins available for generation');
 
       process.exit(0);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const plugins: { name: string; description: string; version: string; features: any[] }[] = [];
 
     for (const pluginPath of availablePluginsPaths) {
@@ -28,6 +32,7 @@ export default function generate({ rootPath, version }: { rootPath: string; vers
       );
       const res = await readdir(join(pluginPath, 'features'), { withFileTypes: true });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const plugin: { name: string; description: string; version: string; features: any[] } = {
         name: pluginPackageJson.name,
         description: pluginPackageJson.description,
@@ -85,6 +90,7 @@ export default function generate({ rootPath, version }: { rootPath: string; vers
       type: 'select',
       name: 'typeName',
       message: 'Select type',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       choices: feature.types.map((type: any) => ({
         title: toTitleCase(type.name),
         description: type.description,
@@ -94,6 +100,7 @@ export default function generate({ rootPath, version }: { rootPath: string; vers
     });
 
     const { typeName } = typeResponse;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const type = feature.types.find((type: any) => type.name === typeName)!;
 
     const dataReponse = await prompts({

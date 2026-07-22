@@ -5,7 +5,7 @@ export const exists = async (target: string): Promise<boolean> => {
     await access(target, constants.R_OK);
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

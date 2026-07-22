@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { copyFile, cp, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { defineConfig } from 'tsup';
 import { fixExtensionsPlugin } from 'esbuild-fix-imports-plugin';
 import type { PackageJson } from 'type-fest';
@@ -19,16 +19,17 @@ function replaceDistPath(packageObj: PackageJson): PackageJson {
       return target;
     }
 
-    if (Array.isArray(target)) return (target as unknown[]).map(toPlainObject);
+    if (Array.isArray(target)) return target.map(toPlainObject);
 
     const plainObj: Record<string, unknown> = {};
-    const keys = Object.getOwnPropertyNames(target as object);
+    const targetObj = target as Record<string, unknown>;
+    const keys = Object.getOwnPropertyNames(target);
 
     for (const key of keys) {
-      const descriptor = Object.getOwnPropertyDescriptor(target as object, key);
+      const descriptor = Object.getOwnPropertyDescriptor(target, key);
 
       if (descriptor) {
-        const value = descriptor.get ? (target as any)[key] : descriptor.value;
+        const value = descriptor.get ? Reflect.get(targetObj, key) : descriptor.value;
         plainObj[key] = toPlainObject(value);
       }
     }

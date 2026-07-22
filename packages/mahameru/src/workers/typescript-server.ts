@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import { devEnvironmentCheck } from '../utils/dev-environment-check';
 import { rm } from 'node:fs/promises';
 import TypescriptServer, { type TypescriptServerEvents } from '../server/typescript-server';
-import pc from 'picocolors';
 
 export type TypescriptServerParentToChildMessage = { type: 'START' } | { type: 'SHUTDOWN' };
 
@@ -66,11 +65,11 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
       });
 
       typescriptServer.on('compile-error', async (errors) => {
-        let error = errors.map((m) => m.formatted).join('\n\n');
-        error += pc.yellow(
-          `\n\nWe found ${pc.white(errors.length)} errors in your code. Fix them and try again. Cheers! 🍻\n\n`,
-        );
-        error += '\x1b[90mPress Ctrl+C to stop the server\x1b[0m\n';
+        // let error = errors.map((m) => m.formatted).join('\n\n');
+        // error += pc.yellow(
+        //   `\n\nWe found ${pc.white(errors.length)} errors in your code. Fix them and try again. Cheers! 🍻\n\n`,
+        // );
+        // error += '\x1b[90mPress Ctrl+C to stop the server\x1b[0m\n';
 
         await sendMessage({
           'compile-error': [errors],
@@ -89,11 +88,11 @@ function sendMessage(message: Partial<TypescriptServerEvents>) {
           server = typescriptServer;
 
           if (typescriptServer.errors.length > 0) {
-            let message = typescriptServer.errors.map((m) => m.formatted).join('\n\n');
-            message += pc.yellow(
-              `\n\nWe found ${pc.white(typescriptServer.errors.length)} errors in your code. Fix them and try again. Cheers! 🍻\n\n`,
-            );
-            message += '\x1b[90mPress Ctrl+C to stop the server\x1b[0m\n';
+            // let message = typescriptServer.errors.map((m) => m.formatted).join('\n\n');
+            // message += pc.yellow(
+            //   `\n\nWe found ${pc.white(typescriptServer.errors.length)} errors in your code. Fix them and try again. Cheers! 🍻\n\n`,
+            // );
+            // message += '\x1b[90mPress Ctrl+C to stop the server\x1b[0m\n';
 
             setTimeout(async () => {
               await sendMessage({

@@ -1,6 +1,7 @@
 import type { IncomingMessage, IncomingHttpHeaders } from 'node:http';
 import type { HTTPMethod } from './types';
 import { extname } from 'node:path';
+import type { TLSSocket } from 'node:tls';
 
 export interface ParsedUserAgent {
   /** The raw User-Agent header string. */
@@ -62,7 +63,7 @@ export class MagmaRequest {
 
   /** Internal cache to hold parsed body formats to allow multiple read attempts. */
   protected _cachedText?: string;
-  protected _cachedJson?: any;
+  protected _cachedJson?: unknown;
   protected _cachedFormData?: URLSearchParams;
 
   /** Raw Node.js HTTP Incoming Message stream. */
@@ -116,12 +117,14 @@ export class MagmaRequest {
    */
   public get secure(): boolean {
     const xForwardedProto = this.getHeader('x-forwarded-proto');
-    if (typeof xForwardedProto === 'string') {
-      return xForwardedProto.toLowerCase() === 'https';
-    }
 
-    const socket = this.rawRequest.socket as any;
-    return !!(socket.encrypted || (socket.pair && socket.pair.ssl));
+    if (typeof xForwardedProto === 'string') return xForwardedProto.toLowerCase() === 'https';
+
+    const socket = this.rawRequest.socket as TLSSocket & {
+      pair?: { ssl?: boolean };
+    };
+
+    return !!(socket.encrypted || socket.pair?.ssl);
   }
 
   /**
@@ -296,21 +299,21 @@ export class MagmaRequest {
    * @param options Custom options including body size limits.
    * @throws {Error} If the payload cannot be parsed as valid JSON.
    */
-  public async json(options?: { limit?: number }): Promise<any> {
+  public async json<T = unknown>(options?: { limit?: number }): Promise<T> {
     if (this._cachedJson !== undefined) {
-      return this._cachedJson;
+      return this._cachedJson as T;
     }
 
     const rawText = await this.text(options);
     if (!rawText.trim()) {
       this._cachedJson = {};
-      return this._cachedJson;
+      return this._cachedJson as T;
     }
 
     try {
       this._cachedJson = JSON.parse(rawText);
-      return this._cachedJson;
-    } catch (err) {
+      return this._cachedJson as T;
+    } catch {
       throw new Error('Invalid JSON Body');
     }
   }

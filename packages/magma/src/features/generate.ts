@@ -69,6 +69,19 @@ const exe = async (rootPath: string, name: string, outputTypesDirPath: string) =
   await magmaGenerator.generate();
 };
 
+export type GenerateFeature = {
+  name: string;
+  description: string;
+  action: (rootPath: string, name: string, outputTypesDirPath: string) => Promise<void>;
+  promptsData: {
+    name: string;
+    message: string;
+    initial: string;
+    validate: (value: string) => string | true;
+    format: (value: string) => string;
+  };
+};
+
 export default [
   {
     name: 'module',

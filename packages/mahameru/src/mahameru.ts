@@ -15,6 +15,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server';
 import type { Ora } from 'ora';
 import type { TypescriptServerParentToChildMessage } from './workers/typescript-server';
+import { createRequire } from 'node:module';
 
 export type MahameruOptions = DiatremaOptions & {
   outputTypesDirPath: string;
@@ -26,6 +27,12 @@ type MahameruGeneratorOptions = {
   rootPath: string;
   outputTypesDirPath: string;
 };
+
+declare global {
+  var mahameruEnv: Record<string, unknown> | undefined;
+}
+
+const requireModule = createRequire(import.meta.url);
 
 const mahameruDefaultOptions: MahameruOptions = {
   ...diatremaDefaultConfig,
@@ -112,7 +119,7 @@ export class Mahameru {
 
             if (this.typescriptServer.errors) {
               // screenUpdate([message.error]);
-              console.log(this.typescriptServer.errors);
+              this.logger.error(this.typescriptServer.errors);
             } else {
               // screenUpdate(undefined);
             }
@@ -402,15 +409,13 @@ export class Mahameru {
             const isDirectory = stats.isDirectory();
 
             if (isDirectory || item.endsWith('.ts') || item.endsWith('.js')) {
-              let nameWithoutExt = '';
-
               if (isDirectory) {
-                nameWithoutExt = item;
-              } else {
-                nameWithoutExt = item.split('.d')[0];
+                const targetPath = '.' + '/' + item;
+
+                return `export * from '${targetPath}'`;
               }
 
-              const targetPath = '.' + '/' + nameWithoutExt;
+              const targetPath = '.' + '/' + item.split('.d')[0];
 
               return `export * from '${targetPath}'`;
             }
@@ -577,8 +582,8 @@ export class Mahameru {
 
     Object.assign(process.env, envForProcess);
 
-    (globalThis as any).mahameruEnv = {
-      ...(globalThis as any).mahameruEnv,
+    globalThis.mahameruEnv = {
+      ...globalThis.mahameruEnv,
       ...envForMahameru,
     };
   }
@@ -593,10 +598,10 @@ export class Mahameru {
 
     if (type === 'commonjs') {
       if (noCache) {
-        delete require.cache[resolvedFilePath];
+        delete requireModule.cache[resolvedFilePath];
       }
 
-      return require(resolvedFilePath) as T;
+      return requireModule(resolvedFilePath) as T;
     }
 
     let fileUrl = pathToFileURL(resolvedFilePath).href;

@@ -127,5 +127,5 @@ export abstract class Generator<O extends BaseGeneratorOptions = BaseGeneratorOp
   }
 
   protected _onDevHRM?(filePath: string): Promise<boolean>;
-  protected abstract _generate?(): Promise<Record<string, any>>;
+  protected abstract _generate?(): Promise<Record<string, unknown>>;
 }

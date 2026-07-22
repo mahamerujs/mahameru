@@ -199,7 +199,9 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
 
     try {
       rmSync(this.options.tsConfigDevFilePath, { force: true, recursive: true });
-    } catch (e) {}
+    } catch (error) {
+      this.logger.error('Error removing tsconfig.dev.json:', error);
+    }
 
     this.pendingChanges.clear();
     this._errors = [];
@@ -256,7 +258,7 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
     let error: TypescriptError;
 
     if (diagnostic.file && diagnostic.start !== undefined) {
-      let { line, character } = getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
+      const { line, character } = getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
       error = {
         type: 'file',
         message: `${diagnostic.file.fileName} (${line + 1},${character + 1}):\n${rawMessage}`,

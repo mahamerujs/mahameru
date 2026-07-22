@@ -1,7 +1,7 @@
 import { Mahameru } from '../../mahameru';
 
 export default function devTest({ rootPath }: { rootPath: string; version: string }) {
-  return async ({}: { host: string; port: number }) => {
+  return async (_: { host: string; port: number }) => {
     try {
       let isShuttingDown = false;
       const mahameru = new Mahameru({

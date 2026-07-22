@@ -3,7 +3,7 @@ import readline from 'readline';
 interface OraSpinner {
   frame: () => string;
   isActive?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const cursor = {
@@ -51,7 +51,7 @@ const updateScreen = (
   content: string | string[],
   spinner?: OraSpinner,
 ): void => {
-  let lines: string[] = Array.isArray(content) ? [...content] : String(content).split('\n');
+  const lines: string[] = Array.isArray(content) ? [...content] : String(content).split('\n');
 
   if (spinner) {
     const frame = spinner.frame();

@@ -1,8 +1,8 @@
 export interface Logger {
-  info(...data: any[]): void;
+  info(...data: unknown[]): void;
   error(message: string, error?: unknown): void;
-  warn(...data: any[]): void;
-  debug(...data: any[]): void;
+  warn(...data: unknown[]): void;
+  debug(...data: unknown[]): void;
 }
 
 export const createLogger = (name: string | string[], debug: boolean = false): Logger => {
@@ -13,16 +13,18 @@ export const createLogger = (name: string | string[], debug: boolean = false): L
   }
 
   return {
-    info: (...data: any[]) => {
+    info: (...data: unknown[]) => {
+      // eslint-disable-next-line no-console
       console.log(...name, '[Info]', ...data);
     },
     error: (message, error) => {
       console.error(...name, `[Error] ${message}`, error);
     },
-    warn: (...data: any[]) => {
+    warn: (...data: unknown[]) => {
       console.warn(...name, '[Warn]', ...data);
     },
-    debug: (...data: any[]) => {
+    debug: (...data: unknown[]) => {
+      // eslint-disable-next-line no-console
       if (debug) console.debug(...name, '[Debug]', ...data);
     },
   };

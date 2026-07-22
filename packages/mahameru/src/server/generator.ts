@@ -2,6 +2,7 @@ import { dirname, join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { Project, ScriptTarget, ModuleKind, ts } from 'ts-morph';
+import { createLogger, type Logger } from '@mahameru/diatrema';
 
 type GeneratorOptions = {
   dev: boolean;
@@ -16,9 +17,11 @@ type GeneratorOptions = {
 
 export class Generator {
   public readonly options: GeneratorOptions;
+  protected logger: Logger;
 
   constructor(initialOptions: GeneratorOptions) {
     this.options = initialOptions;
+    this.logger = createLogger('Generator', this.options.debug);
   }
 
   async start() {
@@ -173,6 +176,7 @@ export const GET: RouteHandler = () => {
   }
 
   public async generateDataSourcesTypes() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dataSources: Record<string, any> = [];
 
     const lines = Object.keys(dataSources).map((name) => `    ${name}: DataSource;`);
@@ -186,15 +190,9 @@ export const GET: RouteHandler = () => {
       await mkdir(dirname(outputPath), { recursive: true });
       await writeFile(outputPath, dataSourceTemplate, 'utf-8');
 
-      this.logger(`Data sources types generated successfully at ${outputPath}`);
+      this.logger.info(`Data sources types generated successfully at ${outputPath}`);
     } catch (error) {
       console.error(`[${Generator.name}]`, 'Error generating data sources types', error);
     }
-  }
-
-  protected logger(...data: any[]) {
-    if (!this.options.debug) return;
-
-    console.log('[Generator]', ...data);
   }
 }

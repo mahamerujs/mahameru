@@ -1,10 +1,12 @@
-import Diatrema from '@mahameru/diatrema';
+import Diatrema, { createLogger } from '@mahameru/diatrema';
 import type { MahameruIPCMessageChild } from '../../types';
 import { printServerReady } from '../../utils/printServerReady';
 import { isPortAvailable } from '../../utils/free-port-finder';
 import { loadConfig } from '../../utils/load-config';
 import { join } from 'node:path';
 import MahameruError from '../../mahameru-error';
+
+const logger = createLogger('Mahameru', true);
 
 export default function start({ rootPath, version }: { rootPath: string; version: string }) {
   return async ({ host, port }: { host: string; port: number }) => {
@@ -43,7 +45,7 @@ export default function start({ rootPath, version }: { rootPath: string; version
         switch (message.type) {
           case 'SHUTDOWN':
             await app.shutdown();
-            console.log(`[Worker ${process.pid}] Graceful Shutting down... Done`);
+            logger.info(`[Worker ${process.pid}] Graceful Shutting down... Done`);
 
             process.exit(0);
         }

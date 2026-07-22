@@ -15,7 +15,10 @@ export enum HTTPMethodEnum {
 
 export type HTTPMethod = `${HTTPMethodEnum}`;
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Modules {}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MagmaContainer extends Modules {}
 
 export interface MagmaContext {
@@ -40,6 +43,7 @@ export type RouteObject<T extends string = string> = {
   methods: HTTPMethod[];
 };
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface RegisterRoutes {}
 
 export type ProtectedRoute = RegisterRoutes extends { routes: infer R }

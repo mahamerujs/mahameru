@@ -16,7 +16,7 @@ export async function freePortFinder(startPort = 3000) {
       const availablePort = await checkPort(port);
 
       return availablePort;
-    } catch (error) {
+    } catch {
       port++;
     }
   }
@@ -28,8 +28,8 @@ function checkPort(port: number): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
 
-    server.once('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
+    server.once('error', (err) => {
+      if (err && 'code' in err && err.code === 'EADDRINUSE') {
         reject(err);
       } else {
         reject(err);
@@ -48,8 +48,8 @@ export function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
 
-    server.once('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
+    server.once('error', (err) => {
+      if (err && 'code' in err && err.code === 'EADDRINUSE') {
         reject(false);
       } else {
         reject(false);

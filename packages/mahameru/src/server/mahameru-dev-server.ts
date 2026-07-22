@@ -7,6 +7,7 @@ import ts from 'typescript';
 import pc from 'picocolors';
 import { replaceTscAliasPaths } from 'tsc-alias';
 import { Generator } from './generator';
+import { createLogger, type Logger } from '@mahameru/diatrema';
 
 export type MahameruDevServerOptions = {
   rootPath: string;
@@ -37,6 +38,7 @@ export type TsErrorReport = {
 export class MahameruDevServer extends EventEmitter {
   public name = 'Mahameru Dev Server';
   protected options: MahameruDevServerOptions;
+  protected logger: Logger;
   public generator: Generator;
   protected watchProgram?: ts.WatchOfConfigFile<ts.EmitAndSemanticDiagnosticsBuilderProgram>;
   protected pendingChanges = new Map<string, 'create' | 'update' | 'delete'>();
@@ -51,14 +53,14 @@ export class MahameruDevServer extends EventEmitter {
     event: K,
     listener: (...args: MahameruDevServerEvents[K]) => void,
   ): this {
-    return super.on(event, listener as any);
+    return super.on(event, listener);
   }
 
   public override once<K extends keyof MahameruDevServerEvents>(
     event: K,
     listener: (...args: MahameruDevServerEvents[K]) => void,
   ): this {
-    return super.once(event, listener as any);
+    return super.once(event, listener);
   }
 
   constructor(initialOptions?: Partial<MahameruDevServerOptions>) {
@@ -76,21 +78,24 @@ export class MahameruDevServer extends EventEmitter {
       sourceDirPath: this.options.sourceDirPath,
       debug: true,
     });
+
+    this.logger = createLogger('Mahameru Dev Server', true);
   }
 
-  public startTypeChecker(): Promise<void> {
-    return new Promise(async (resolvePromise) => {
-      let isInitialBuildDone = false;
-      const tsConfig = JSON.parse(await readFile(this.options.tsConfigPath, 'utf-8'));
-      const tsConfigDev = {
-        ...tsConfig,
-        compilerOptions: {
-          ...tsConfig.compilerOptions,
-        },
-        include: [...tsConfig.include],
-      };
+  public async startTypeChecker(): Promise<void> {
+    const tsConfig = JSON.parse(await readFile(this.options.tsConfigPath, 'utf-8'));
+    const tsConfigDev = {
+      ...tsConfig,
+      compilerOptions: {
+        ...tsConfig.compilerOptions,
+      },
+      include: [...tsConfig.include],
+    };
 
-      await writeFile(this.options.tsConfigDevFilePath, JSON.stringify(tsConfigDev, null, 2));
+    await writeFile(this.options.tsConfigDevFilePath, JSON.stringify(tsConfigDev, null, 2));
+
+    return new Promise<void>((resolvePromise) => {
+      let isInitialBuildDone = false;
 
       const host = ts.createWatchCompilerHost(
         this.options.tsConfigDevFilePath,
@@ -236,7 +241,7 @@ export class MahameruDevServer extends EventEmitter {
 
       for (const diagnostic of allDiagnostics) {
         if (diagnostic.file) {
-          let { line, character } = ts.getLineAndCharacterOfPosition(
+          const { line, character } = ts.getLineAndCharacterOfPosition(
             diagnostic.file,
             diagnostic.start!,
           );
@@ -328,7 +333,7 @@ export class MahameruDevServer extends EventEmitter {
 
     for (const diagnostic of allDiagnostics) {
       if (diagnostic.file) {
-        let { line, character } = ts.getLineAndCharacterOfPosition(
+        const { line, character } = ts.getLineAndCharacterOfPosition(
           diagnostic.file,
           diagnostic.start!,
         );
@@ -382,8 +387,8 @@ export class MahameruDevServer extends EventEmitter {
         outDir: this.options.productionDirPath,
         resolveFullPaths: true,
       });
-    } catch (aliasError: any) {
-      console.error(pc.red(`Error running tsc-alias: ${aliasError.message || aliasError}`));
+    } catch (error) {
+      this.logger.error(pc.red('Error running tsc-alias'), error);
 
       process.exit(1);
     } finally {
@@ -408,7 +413,7 @@ export class MahameruDevServer extends EventEmitter {
     let error: TsErrorReport;
 
     if (diagnostic.file) {
-      let { line, character } = ts.getLineAndCharacterOfPosition(
+      const { line, character } = ts.getLineAndCharacterOfPosition(
         diagnostic.file,
         diagnostic.start!,
       );

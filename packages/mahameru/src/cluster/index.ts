@@ -2,6 +2,7 @@ import cluster from 'node:cluster';
 import { availableParallelism } from 'node:os';
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from '../types';
 import { join } from 'node:path';
+import { createLogger } from '@mahameru/diatrema';
 
 let isShuttingDown = false;
 let isAppReady = false;
@@ -13,13 +14,15 @@ type Options = {
   dev: boolean;
 };
 
+const logger = createLogger('Mahameru', true);
+
 export default async function startCluster(options: Options) {
   cluster.schedulingPolicy = cluster.SCHED_RR;
   cluster.setupPrimary({
     exec: join(process.cwd(), 'node_modules', 'mahameru', 'cluster', 'bootstrap.js'),
   });
   const numCPUs = availableParallelism();
-  console.log(`[Mahameru CLI] Primary process ${process.pid} is orchestrating.`);
+  logger.info(`[Mahameru CLI] Primary process ${process.pid} is orchestrating.`);
 
   for (let i = 0; i < numCPUs; i++)
     cluster.fork({
@@ -29,10 +32,10 @@ export default async function startCluster(options: Options) {
       MAHAMERU_DEV: String(options.dev),
     });
 
-  console.log(`[Mahameru CLI] Enabled ${numCPUs} core(s).`);
+  logger.info(`[Mahameru CLI] Enabled ${numCPUs} core(s).`);
 
   if (cluster.workers)
-    console.log(
+    logger.info(
       `[Mahameru CLI] Workers: [${Object.values(cluster.workers)
         .map((worker) => worker!.process.pid)
         .join(', ')}]\n`,
@@ -40,7 +43,7 @@ export default async function startCluster(options: Options) {
 
   cluster.on('exit', (worker, code, signal) => {
     if (!isShuttingDown) {
-      console.error(
+      logger.warn(
         `[Mahameru] Worker ${worker.process.pid} died (Code: ${code} / Signal: ${signal}). Reviving...`,
       );
       cluster.fork({
@@ -96,7 +99,7 @@ export default async function startCluster(options: Options) {
 
     isShuttingDown = true;
 
-    console.log(`[Mahameru CLI] Received ${signal} signal. Shutting down...`);
+    logger.info(`[Mahameru CLI] Received ${signal} signal. Shutting down...`);
 
     try {
       process.exit(0);

@@ -1,16 +1,29 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/coverage/**',
+      '**/.turbo/**',
+      '**/*.json',
+      '**/package.json',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettier,
   {
-    files: ['**/*.json', '**/*.ts', '**/*.tsx', '**/*.js', '**/*.mjs'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'warn',

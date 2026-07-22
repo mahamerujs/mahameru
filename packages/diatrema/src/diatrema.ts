@@ -43,7 +43,7 @@ export const diatremaDefaultConfig: DiatremaOptions = {
 export class Diatrema extends EventEmitter<DiatremaEvents> {
   protected _initialized = false;
   protected _isShuttingDown = false;
-  protected _plugins = new Map<string, MahameruPlugin<any>>();
+  protected _plugins = new Map<string, MahameruPlugin>();
   protected logger: Logger;
   public readonly options: DiatremaOptions;
 
@@ -70,21 +70,17 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     return this._isShuttingDown;
   }
 
-  get plugins(): Record<string, MahameruPlugin<any>> {
+  get plugins(): Record<string, MahameruPlugin> {
     return Object.fromEntries(this._plugins);
   }
 
   public async initialize(): Promise<void> {
-    try {
-      if (this._initialized) return;
+    if (this._initialized) return;
 
-      for (const plugin of this._plugins.values()) {
-        plugin.setDiatrema(this);
+    for (const plugin of this._plugins.values()) {
+      plugin.setDiatrema(this);
 
-        await plugin.initialize();
-      }
-    } catch (error) {
-      throw error;
+      await plugin.initialize();
     }
 
     this._initialized = true;
@@ -92,11 +88,11 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     this.emit('ready', { mode: this.options.dev ? 'development' : 'production' });
   }
 
-  public setPlugin<T extends MahameruPlugin<any>>(pluginName: string, plugin: T) {
+  public setPlugin<T extends MahameruPlugin>(pluginName: string, plugin: T) {
     this._plugins.set(pluginName, plugin);
   }
 
-  public getPlugin<T extends MahameruPlugin<any>>(pluginName: string): T | undefined {
+  public getPlugin<T extends MahameruPlugin>(pluginName: string): T | undefined {
     return this._plugins.get(pluginName) as T | undefined;
   }
 

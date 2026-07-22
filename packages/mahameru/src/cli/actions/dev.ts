@@ -14,12 +14,14 @@ import type {
   TypescriptServerEvents,
   TypescriptServerStatus,
 } from '../../server/typescript-server';
+import { createLogger } from '@mahameru/diatrema';
 
 // const __dirname = dirname(fileURLToPath(import.meta.url));
-let appState: { port: number; host: string; mode: 'development' | 'production' } | null = null;
+// let appState: { port: number; host: string; mode: 'development' | 'production' } | null = null;
+const logger = createLogger('Mahameru', true);
 
 export default function dev({ rootPath }: { rootPath: string; version: string }) {
-  return async ({}: { host: string; port: number }) => {
+  return async (_: { host: string; port: number }) => {
     let shuttingDown = false;
     const shutdownTimeout = 3000;
 
@@ -45,12 +47,12 @@ export default function dev({ rootPath }: { rootPath: string; version: string })
               message['compile-error'][0].length > 0
                 ? message['compile-error'][0].map((m) => m.formatted).join('\n\n')
                 : undefined;
-            console.log(errors);
-            if (!appState) return;
+            if (typeof errors !== 'undefined') logger.error(errors);
+            // if (!appState) return;
 
             if (errors) {
               // screenUpdate([message.error]);
-              console.log(errors);
+              logger.error(errors);
             } else {
               // screenUpdate(undefined);
             }
@@ -72,7 +74,7 @@ export default function dev({ rootPath }: { rootPath: string; version: string })
             //     if (message.eventType === 'update')
             //         devServerInstance.sendMessage({ type: 'FILE_CHANGED', filePath: message.filePath, eventType: message.eventType });
             // }
-            console.log('[TypescriptServer]', filePath, eventType, itemType);
+            logger.info('[TypescriptServer]', filePath, eventType, itemType);
           }
         });
 
@@ -97,7 +99,7 @@ export default function dev({ rootPath }: { rootPath: string; version: string })
       //     mode: data.mode
       // }
 
-      console.log('Ready!');
+      logger.info('Ready!');
 
       // screenUpdate(errors ? errors : undefined, undefined);
 
@@ -105,7 +107,7 @@ export default function dev({ rootPath }: { rootPath: string; version: string })
         // cli.cursor.show();
 
         if (shuttingDown) {
-          console.log(`Please wait, we are trying to shutdown gracefully.`);
+          logger.info(`Please wait, we are trying to shutdown gracefully.`);
 
           return;
         }

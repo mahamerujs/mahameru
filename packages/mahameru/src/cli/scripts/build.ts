@@ -23,6 +23,7 @@ export const buildScript = async ({
 
     const errors: TsErrorReport[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     worker.on('message', ({ type, data }: any) => {
       if (type === 'ERROR' && data) {
         errors.push(...(data as TsErrorReport[]));

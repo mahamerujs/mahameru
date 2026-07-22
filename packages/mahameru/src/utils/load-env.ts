@@ -54,8 +54,8 @@ export function loadEnvironmentVariables(dev: boolean) {
 
   Object.assign(process.env, envForProcess);
 
-  (globalThis as any).mahameruEnv = {
-    ...(globalThis as any).mahameruEnv,
+  globalThis.mahameruEnv = {
+    ...globalThis.mahameruEnv,
     ...envForMahameru,
   };
 }

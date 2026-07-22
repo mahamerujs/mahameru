@@ -11,6 +11,7 @@ export function printServerReady({
   version: string;
   hasError?: boolean;
 }) {
+  // eslint-disable-next-line no-console
   console.log(printServerReadyString({ mode, host, port, version, hasError }));
 }
 

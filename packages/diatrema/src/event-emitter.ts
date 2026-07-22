@@ -1,11 +1,19 @@
-type Listener<T extends any[]> = (...args: T) => void;
+type Listener<T extends unknown[]> = (...args: T) => void;
 
-export class EventEmitter<Events extends Record<string, any[]>> {
-  private listeners = new Map<keyof Events, Listener<any[]>[]>();
+type WrappedListener<T extends unknown[]> = Listener<T> & {
+  original?: Listener<T>;
+};
+
+export class EventEmitter<Events extends Record<string, unknown[]>> {
+  private listeners = new Map<keyof Events, Listener<never[]>[]>();
 
   on<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
     if (!this.listeners.has(event)) this.listeners.set(event, []);
-    this.listeners.get(event)!.push(listener as Listener<any[]>);
+
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      eventListeners.push(listener as unknown as Listener<never[]>);
+    }
   }
 
   off<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
@@ -13,7 +21,11 @@ export class EventEmitter<Events extends Record<string, any[]>> {
 
     if (!list) return;
 
-    const index = list.findIndex((l) => l === listener || (l as any).original === listener);
+    const index = list.findIndex(
+      (l) =>
+        l === (listener as unknown as Listener<never[]>) ||
+        (l as WrappedListener<never[]>).original === (listener as unknown as Listener<never[]>),
+    );
 
     if (index !== -1) list.splice(index, 1);
   }
@@ -22,20 +34,21 @@ export class EventEmitter<Events extends Record<string, any[]>> {
     const list = this.listeners.get(event);
 
     if (list) {
-      [...list].forEach((listener) => listener(...args));
+      [...list].forEach((listener) => {
+        (listener as unknown as Listener<Events[K]>)(...args);
+      });
     }
   }
 
   once<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
-    const onceListener = (...args: Events[K]) => {
+    const onceListener: WrappedListener<Events[K]> = (...args: Events[K]) => {
       listener(...args);
-
-      this.off(event, onceListener as any);
+      this.off(event, onceListener);
     };
 
     onceListener.original = listener;
 
-    this.on(event, onceListener as any);
+    this.on(event, onceListener);
   }
 
   removeAllListeners<K extends keyof Events>(event?: K): void {
