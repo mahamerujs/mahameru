@@ -1,4 +1,4 @@
-import type { MagmaContainer } from '@mahameru/magma';
+import { MagmaResponse, type MagmaContainer } from "@mahameru/magma";
 
 export type {{namePascalCase}} = {
   id: string;
@@ -84,6 +84,6 @@ export default class {{namePascalCase}}Service {
   deleteById(id: string) {
     const existingData = this.getOneById(id);
 
-    return this.{{nameCamelCase}}s.delete(id);
+    return this.{{nameCamelCase}}s.delete(existingData.id);
   }
 }
