@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.8
+
+### Patch Changes
+
+- Catch route handler throw
+
 ## 0.0.7
 
 ### Patch Changes

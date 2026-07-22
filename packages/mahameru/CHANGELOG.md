@@ -1,5 +1,11 @@
 # mahameru
 
+## 0.0.43
+
+### Patch Changes
+
+- Change debug to error on catch
+
 ## 0.0.42
 
 ### Patch Changes

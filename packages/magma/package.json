@@ -1,6 +1,6 @@
 {
   "name": "@mahameru/magma",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Official HTTP server plugin for Mahameru JS framework, providing fast and minimalist routing capabilities.",
   "bin": {
     "magma": "./dist/index.js"
