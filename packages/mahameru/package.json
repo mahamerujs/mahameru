@@ -22,7 +22,7 @@
     "lint:fix": "eslint . --fix",
     "build:js": "tsup",
     "build:types": "tsc",
-    "build": "pnpm build:js && pnpm build:types",
+    "build": "rimraf dist && tsup && tsc",
     "dev:js": "tsup --watch",
     "dev:types": "tsc --watch --preserveWatchOutput",
     "dev": "pnpm dev:js && pnpm dev:types"

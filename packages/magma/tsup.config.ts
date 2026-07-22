@@ -76,7 +76,9 @@ export default defineConfig((options) => {
     cjsInterop: true,
     sourcemap: true,
     dts: false,
-    clean: !options.watch,
+    clean: options.watch
+      ? false
+      : ['./dist/**/*.js', './dist/**/*.cjs', './dist/**/*.mjs', './dist/**/*.map'],
     shims: true,
     esbuildPlugins: [fixExtensionsPlugin()],
     onSuccess,
