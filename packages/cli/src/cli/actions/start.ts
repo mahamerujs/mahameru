@@ -1,68 +1,68 @@
-import { StrictServerOptions } from "./scripts/types";
+import { StrictServerOptions } from './scripts/types';
 import { App, type AppInstanceOptions } from './scripts/app';
-import { printCliBanner } from "./scripts/printCliBanner";
-import { printServerReady } from "./scripts/printServerReady";
+import { printCliBanner } from './scripts/printCliBanner';
+import { printServerReady } from './scripts/printServerReady';
 import pc from 'picocolors';
 
 export function start({ rootPath, version }: { rootPath: string; version: string }) {
-    return async ({ host, port, multiCore }: StrictServerOptions & { multiCore?: number }) => {
-        let isShuttingDown = false;
+  return async ({ host, port, multiCore }: StrictServerOptions & { multiCore?: number }) => {
+    let isShuttingDown = false;
 
-        printCliBanner(version);
+    printCliBanner(version);
 
-        const appOptions: Partial<AppInstanceOptions> = {
+    const appOptions: Partial<AppInstanceOptions> = {
+      dev: false,
+      host,
+      port,
+      rootPath,
+      multiCore,
+    };
+
+    const app = new App(appOptions);
+
+    app.onMessage = (message) => {
+      switch (message.type) {
+        case 'READY':
+          printServerReady({
             dev: false,
-            host,
-            port,
-            rootPath,
-            multiCore
-        }
+            mode: 'production',
+            host: message.data.host,
+            port: message.data.port,
+          });
+          break;
 
-        const app = new App(appOptions);
+        case 'ERROR':
+          console.error(
+            pc.red(`\n[Mahameru]`),
+            message.data.message,
+            message.data.stack ?? '',
+            message.data.code ?? '',
+          );
+          break;
 
-        app.onMessage = (message) => {
-            switch (message.type) {
-                case 'READY':
-                    printServerReady({
-                        dev: false,
-                        mode: 'production',
-                        host: message.data.host,
-                        port: message.data.port
-                    });
-                    break;
+        case 'LOG':
+          console.log(message.data);
+          break;
 
-                case 'ERROR':
-                    console.error(
-                        pc.red(`\n[Mahameru]`),
-                        message.data.message,
-                        message.data.stack ?? '',
-                        message.data.code ?? ''
-                    );
-                    break;
+        default:
+          // console.log(`[Mahameru] Unknown IPC message type: ${(message as any).type}`);
+          break;
+      }
+    };
 
-                case 'LOG':
-                    console.log(message.data);
-                    break;
+    await app.start();
 
-                default:
-                    // console.log(`[Mahameru] Unknown IPC message type: ${(message as any).type}`);
-                    break;
-            }
-        }
+    const shutdown = async (signal: NodeJS.Signals) => {
+      if (isShuttingDown) return;
 
-        await app.start();
+      isShuttingDown = true;
 
-        const shutdown = async (signal: NodeJS.Signals) => {
-            if (isShuttingDown) return;
+      await app.stop();
 
-            isShuttingDown = true;
+      process.exit(0);
+    };
 
-            await app.stop();
-
-            process.exit(0);
-        };
-
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
-    }
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+  };
 }

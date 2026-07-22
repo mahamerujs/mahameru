@@ -1,43 +1,43 @@
 import readline from 'readline';
 
 interface OraSpinner {
-    frame: () => string;
-    isActive?: boolean;
-    [key: string]: any;
+  frame: () => string;
+  isActive?: boolean;
+  [key: string]: any;
 }
 
 const cursor = {
-    /**
-     * Hides the terminal cursor (typically used before starting CLI rendering).
-     */
-    hide(): void {
-        process.stdout.write('\u001B[?25l');
-    },
+  /**
+   * Hides the terminal cursor (typically used before starting CLI rendering).
+   */
+  hide(): void {
+    process.stdout.write('\u001B[?25l');
+  },
 
-    /**
-     * Shows the terminal cursor (must be called when the application finishes or exits).
-     */
-    show(): void {
-        process.stdout.write('\u001B[?25h');
-    },
+  /**
+   * Shows the terminal cursor (must be called when the application finishes or exits).
+   */
+  show(): void {
+    process.stdout.write('\u001B[?25h');
+  },
 
-    /**
-     * Moves the cursor to a specific coordinate.
-     * @param x - The column coordinate (horizontal position).
-     * @param y - The row coordinate (vertical position).
-     */
-    moveTo(x: number, y?: number): void {
-        readline.cursorTo(process.stdout as unknown as NodeJS.WritableStream, x, y);
-    },
+  /**
+   * Moves the cursor to a specific coordinate.
+   * @param x - The column coordinate (horizontal position).
+   * @param y - The row coordinate (vertical position).
+   */
+  moveTo(x: number, y?: number): void {
+    readline.cursorTo(process.stdout as unknown as NodeJS.WritableStream, x, y);
+  },
 
-    /**
-     * Moves the cursor relative to its current position.
-     * @param dx - Horizontal offset (positive to the right, negative to the left).
-     * @param dy - Vertical offset (positive down, negative up).
-     */
-    move(dx: number, dy: number): void {
-        readline.moveCursor(process.stdout as unknown as NodeJS.WritableStream, dx, dy);
-    }
+  /**
+   * Moves the cursor relative to its current position.
+   * @param dx - Horizontal offset (positive to the right, negative to the left).
+   * @param dy - Vertical offset (positive down, negative up).
+   */
+  move(dx: number, dy: number): void {
+    readline.moveCursor(process.stdout as unknown as NodeJS.WritableStream, dx, dy);
+  },
 };
 
 /**
@@ -46,36 +46,38 @@ const cursor = {
  * @param content - The main content to display (either a multiline string or an array of lines).
  * @param spinner - Optional Ora spinner instance to integrate automatically.
  */
-const updateScreen = (header: string | undefined, content: string | string[], spinner?: OraSpinner): void => {
-    let lines: string[] = Array.isArray(content)
-        ? [...content]
-        : String(content).split('\n');
+const updateScreen = (
+  header: string | undefined,
+  content: string | string[],
+  spinner?: OraSpinner,
+): void => {
+  let lines: string[] = Array.isArray(content) ? [...content] : String(content).split('\n');
 
-    if (spinner) {
-        const frame = spinner.frame();
+  if (spinner) {
+    const frame = spinner.frame();
 
-        if (lines.length > 0) {
-            lines[0] = `${frame} ${lines[0]}`;
-        } else {
-            lines.push(frame);
-        }
+    if (lines.length > 0) {
+      lines[0] = `${frame} ${lines[0]}`;
+    } else {
+      lines.push(frame);
     }
+  }
 
-    const finalLines: string[] = [];
+  const finalLines: string[] = [];
 
-    if (header !== undefined) {
-        const headerLines = String(header).split('\n') + '\n';
+  if (header !== undefined) {
+    const headerLines = String(header).split('\n') + '\n';
 
-        finalLines.push(headerLines);
-    }
+    finalLines.push(headerLines);
+  }
 
-    finalLines.push(...lines);
+  finalLines.push(...lines);
 
-    const stream = process.stdout as unknown as NodeJS.WritableStream;
+  const stream = process.stdout as unknown as NodeJS.WritableStream;
 
-    readline.cursorTo(stream, 0, 0);
-    readline.clearScreenDown(stream);
-    process.stdout.write(finalLines.join('\n'));
+  readline.cursorTo(stream, 0, 0);
+  readline.clearScreenDown(stream);
+  process.stdout.write(finalLines.join('\n'));
 };
 
 /**
@@ -83,11 +85,11 @@ const updateScreen = (header: string | undefined, content: string | string[], sp
  * Works consistently across different OS terminals (VS Code, CMD, Git Bash, macOS).
  */
 const clearScreen = (): void => {
-    process.stdout.write('\u001B[3J\u001B[2J\u001B[H');
+  process.stdout.write('\u001B[3J\u001B[2J\u001B[H');
 
-    if (process.platform === 'win32') {
-        process.stdout.write('\x1Bc');
-    }
+  if (process.platform === 'win32') {
+    process.stdout.write('\x1Bc');
+  }
 };
 
 const cli = { cursor, updateScreen, clearScreen };

@@ -1,1 +1,1 @@
-export * from './mahameru-ipc-message'
+export * from './mahameru-ipc-message';

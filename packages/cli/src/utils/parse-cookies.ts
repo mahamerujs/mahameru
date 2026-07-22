@@ -1,19 +1,19 @@
 export function parseCookies(cookieHeader: string) {
-    const list: Record<string, string> = {};
+  const list: Record<string, string> = {};
 
-    if (!cookieHeader) return list;
+  if (!cookieHeader) return list;
 
-    cookieHeader.split(';').forEach(cookie => {
-        let [name, ...rest] = cookie.split('=');
+  cookieHeader.split(';').forEach((cookie) => {
+    let [name, ...rest] = cookie.split('=');
 
-        name = name.trim();
+    name = name.trim();
 
-        if (!name) return;
+    if (!name) return;
 
-        const value = rest.join('=').trim();
+    const value = rest.join('=').trim();
 
-        list[name] = decodeURIComponent(value);
-    });
+    list[name] = decodeURIComponent(value);
+  });
 
-    return list;
+  return list;
 }

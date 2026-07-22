@@ -1,7 +1,7 @@
-import { mahameruConfig } from 'mahameru'
+import { mahameruConfig } from 'mahameru';
 
 export default mahameruConfig(() => {
-	return {
-		trailingSlash: false
-	}
-})
+  return {
+    trailingSlash: false,
+  };
+});

@@ -9,10 +9,10 @@ This plugin is currently in its early development phase (**v0.x.x**). **Breaking
 
 ## ⚡ Features (Under Development)
 
-* **Mahameru Native:** Designed from the ground up to integrate seamlessly with Mahameru JS core.
-* **Folder-Based Routing:** Intuitively map your file and directory structures directly into HTTP endpoints.
-* **Lightweight & Modular:** Zero unnecessary dependencies, keeping your Mahameru apps lean.
-* **Extensible Middleware:** Simple pipeline setup to intercept requests and responses at any folder level.
+- **Mahameru Native:** Designed from the ground up to integrate seamlessly with Mahameru JS core.
+- **Folder-Based Routing:** Intuitively map your file and directory structures directly into HTTP endpoints.
+- **Lightweight & Modular:** Zero unnecessary dependencies, keeping your Mahameru apps lean.
+- **Extensible Middleware:** Simple pipeline setup to intercept requests and responses at any folder level.
 
 ## 🚀 Quick Start (Experimental)
 
@@ -48,6 +48,7 @@ app.start();
 ```
 
 ## 🗺️ Roadmap & Stability Goals
+
 [ ] Stabilize core HTTP routing and request context.
 
 [ ] Implement robust error handling and built-in logger integration.
@@ -57,7 +58,9 @@ app.start();
 [ ] Reconcile and lock the public API for the v1.0.0 stable release.
 
 ## 🤝 Contributing
+
 Since this plugin is in early alpha, we are not accepting major feature requests just yet. However, bug reports and early feedback on the API design are highly welcome! Please open an issue if you encounter any unexpected behavior.
 
 ## 📄 License
+
 MIT © Mahameru Ecosystem

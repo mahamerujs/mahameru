@@ -1,6 +1,5 @@
-
 export function createDevAppBootstrapScript(config: Partial<any>) {
-    return `
+  return `
         import mahameru from "mahameru";
         import { relative } from "node:path";
 
@@ -31,7 +30,7 @@ export function createDevAppBootstrapScript(config: Partial<any>) {
 }
 
 export function createAppBootstrapScript(config: Partial<any>) {
-    return `
+  return `
         import mahameruModule from "mahameru";
         const {default: mahameru} = mahameruModule
         const app = mahameru(${JSON.stringify(config)});

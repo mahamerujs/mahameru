@@ -3,19 +3,19 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/cli",
+      "path": "./packages/cli"
     },
     {
-      "path": "./packages/create-mahameru",
+      "path": "./packages/create-mahameru"
     },
     {
-      "path": "./packages/diatrema",
+      "path": "./packages/diatrema"
     },
     {
-      "path": "./packages/magma",
+      "path": "./packages/magma"
     },
     {
-      "path": "./packages/mahameru",
+      "path": "./packages/mahameru"
     }
   ]
 }

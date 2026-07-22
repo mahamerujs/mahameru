@@ -15,105 +15,111 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createAsciiBox(title: string) {
-    const content = [
-        title,
-        `Version: ${version}`,
-        `Built: ${new Date().getFullYear()}`,
-        '',
-        `Copyright (c) Bintan <hello@bintvn.co>`,
-        `Licensed under the ISC License.`
-    ].join('\n');
+  const content = [
+    title,
+    `Version: ${version}`,
+    `Built: ${new Date().getFullYear()}`,
+    '',
+    `Copyright (c) Bintan <hello@bintvn.co>`,
+    `Licensed under the ISC License.`,
+  ].join('\n');
 
-    const boxed = boxen(content, {
-        padding: 1,
-        margin: 0,
-        borderStyle: 'single',
-        align: 'left'
-    });
+  const boxed = boxen(content, {
+    padding: 1,
+    margin: 0,
+    borderStyle: 'single',
+    align: 'left',
+  });
 
-    const cleanBox = stripAnsi(boxed);
-    const commentLines = cleanBox.split('\n').map((line: string) => ` * ${line}`);
+  const cleanBox = stripAnsi(boxed);
+  const commentLines = cleanBox.split('\n').map((line: string) => ` * ${line}`);
 
-    return [
-        '/*!',
-        ...commentLines,
-        ' */'
-    ].join('\n');
+  return ['/*!', ...commentLines, ' */'].join('\n');
 }
 
 const baseConfig: webpack.Configuration = {
-    target: 'node',
-    mode: 'production',
-    optimization: {
-        minimize: true,
-        minimizer: [
-            new TerserPlugin({
-                extractComments: false,
-                terserOptions: {
-                    format: {
-                        max_line_len: 120,
-                        comments: /^!/
-                    }
-                }
-            } as any),
-        ],
-    },
-    externalsPresets: { node: true },
-    externals: [
-        nodeExternals()
-    ],
-    module: {
-        exprContextCritical: false,
-        rules: [
-            {
-                test: /\.ts$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
-            },
-        ],
-    },
-    resolve: {
-        extensions: ['.ts', '.js', '.json'],
-        extensionAlias: {
-            '.js': ['.ts', '.js'],
+  target: 'node',
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        extractComments: false,
+        terserOptions: {
+          format: {
+            max_line_len: 120,
+            comments: /^!/,
+          },
         },
-        plugins: [new TsconfigPathsPlugin({ configFile: './tsconfig.json' })],
-    }
-}
+      } as any),
+    ],
+  },
+  externalsPresets: { node: true },
+  externals: [nodeExternals()],
+  module: {
+    exprContextCritical: false,
+    rules: [
+      {
+        test: /\.ts$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.ts', '.js', '.json'],
+    extensionAlias: {
+      '.js': ['.ts', '.js'],
+    },
+    plugins: [new TsconfigPathsPlugin({ configFile: './tsconfig.json' })],
+  },
+};
 
 const config: webpack.Configuration[] = [
-    {
-        ...baseConfig,
-        entry: './src/cli/index.ts',
-        output: {
-            path: path.resolve(__dirname, 'dist'),
-            filename: 'cli.js',
+  {
+    ...baseConfig,
+    entry: './src/cli/index.ts',
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: 'cli.js',
+    },
+    plugins: [
+      new webpack.BannerPlugin({
+        banner: `#!/usr/bin/env node\n${createAsciiBox('▲ MahameruJS - CLI')}\n`,
+        raw: true,
+        entryOnly: true,
+      }),
+      {
+        apply: (compiler) => {
+          compiler.hooks.afterEmit.tap('CopyAfterBundlePlugin', (compilation) => {
+            const packageJsonString = readFileSync(
+              path.resolve(__dirname, 'package.json'),
+              'utf-8',
+            );
+            const packageJson = JSON.parse(packageJsonString);
+
+            delete packageJson.devDependencies;
+            delete packageJson.scripts;
+
+            writeFileSync(
+              path.resolve(__dirname, 'dist/package.json'),
+              JSON.stringify(packageJson, null, 2),
+            );
+            // cpSync(path.resolve(__dirname, '..', 'pm-dashboard', 'dist'), path.resolve(__dirname, 'dist', 'mpm'), { recursive: true });
+            copyFileSync(
+              path.resolve(__dirname, 'README.md'),
+              path.resolve(__dirname, 'dist/README.md'),
+            );
+            execSync('npm pack', { stdio: 'inherit', cwd: path.resolve(__dirname, 'dist') });
+            renameSync(
+              path.resolve(__dirname, 'dist', `mahameru-cli-${version}.tgz`),
+              path.resolve(__dirname, 'dist', 'dist.tgz'),
+            );
+          });
         },
-        plugins: [
-            new webpack.BannerPlugin({
-                banner: `#!/usr/bin/env node\n${createAsciiBox('▲ MahameruJS - CLI')}\n`,
-                raw: true,
-                entryOnly: true
-            }),
-            {
-                apply: (compiler) => {
-                    compiler.hooks.afterEmit.tap('CopyAfterBundlePlugin', (compilation) => {
-                        const packageJsonString = readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8');
-                        const packageJson = JSON.parse(packageJsonString);
-
-                        delete packageJson.devDependencies;
-                        delete packageJson.scripts;
-
-                        writeFileSync(path.resolve(__dirname, 'dist/package.json'), JSON.stringify(packageJson, null, 2));
-                        // cpSync(path.resolve(__dirname, '..', 'pm-dashboard', 'dist'), path.resolve(__dirname, 'dist', 'mpm'), { recursive: true });
-                        copyFileSync(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'));
-                        execSync('npm pack', { stdio: 'inherit', cwd: path.resolve(__dirname, 'dist') });
-                        renameSync(path.resolve(__dirname, 'dist', `mahameru-cli-${version}.tgz`), path.resolve(__dirname, 'dist', 'dist.tgz'));
-                    });
-                },
-            },
-        ]
-    }
+      },
+    ],
+  },
 ];
 
 export default config;

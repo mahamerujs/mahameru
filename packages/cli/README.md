@@ -222,7 +222,9 @@ mahameru pm service status
 This command reports the Process Manager service status for the current platform.
 
 ## Configuration
+
 MahameruJS Process Manager config file can be found at:
+
 - Windows: C:\Users\yourUsername\AppData\Roaming\mahameru\pm.config.json
 - MacOS: /Users/yourUsername/Library/Application Support/mahameru/pm.config.json
 - Linux: /etc/mahameru/pm.config.json
