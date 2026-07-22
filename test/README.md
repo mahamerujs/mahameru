@@ -1,59 +1,86 @@
-# MahameruJS Minimal HTTP Server Typescript Example
+# MahameruJS — Minimal TypeScript HTTP Server
 
-This example use only for development purpose.
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-11.0+-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-For production, you can use the [create-mahameru](https://github.com/bintan/create-mahameru) command to scaffold a new project, or run:
+A minimal, lightweight HTTP server example built with TypeScript and MahameruJS.
+
+---
+
+> ℹ️ **Note:** This template is primarily intended for **development and testing** purposes. For production, please see the Quick Start section below.
+
+---
+
+## 🚀 Quick Start (Production)
+
+If you're starting a new production project, the fastest way is to scaffold it using `create-mahameru`:
 
 ```bash
 npm create mahameru@latest
 ```
 
-Then choose the **Minimal HTTP Server Typescript** template.
+When prompted, select the **Minimal HTTP Server Typescript** template.
 
-## Development
+---
 
-In this monorepo architecture, we use [pnpm](https://pnpm.io/) as the package manager. If you don't have it installed, you can install it with:
+## 🛠️ Local Development Setup
+
+This project uses [pnpm](https://pnpm.io/) in a monorepo architecture.
+
+### 1. Prerequisites
+
+Make sure you have `pnpm` installed globally:
 
 ```bash
+# Using NPM
 npm install -g pnpm@latest
-```
 
-or:
-
-```bash
-// macOS / Linux
+# Using macOS / Linux curl
 curl -fsSL https://get.pnpm.io/install.sh | sh -
-```
 
-```bash
-// Windows
+# Using Windows PowerShell
 iwr https://get.pnpm.io/install.ps1 -useb | iex
 ```
 
-Then run commands below on the root directory of the monorepo project:
+### 2. Getting Started
 
-```bash
-pnpm install
-```
+1. **Clone the repository:**
 
-After installing dependencies, run:
+   ```bash
+   git clone https://github.com/mahamerujs/mahameru.git
+   ```
 
-```bash
-pnpm build
-```
+2. **Navigate to the project directory:**
 
-to build the project.
+   ```bash
+   cd mahameru
+   ```
 
-Then run:
+3. **Install dependencies:**
 
-```bash
-cd test
-pnpm dev
-```
+   ```bash
+   pnpm install
+   ```
 
-to run the test development server.
+4. **Run the test development server:**
+   ```bash
+   pnpm dev:test
+   ```
 
-If you have any questions, please open an issue on [github](https://github.com/bintan/mahameru/issues).
-Or catch me on [discord](https://discord.gg/7PNmMxykSF) or [instagram](https://instagram.com/bintvn).
+---
 
-Have a nice day!
+## 💬 Community & Support
+
+Have questions, bug reports, or feature requests?
+
+- 🐛 **Issues:** [Open an Issue on GitHub](https://github.com/bintan/mahameru/issues)
+- 💬 **Discord:** Join the discussion on [Discord](https://discord.gg/7PNmMxykSF)
+- 📷 **Instagram:** Connect via [@mahamerujs](https://instagram.com/mahamerujs)
+- 📷 **Instagram:** Connect via [@bintvn](https://instagram.com/bintvn)
+
+---
+
+<p align="center">
+  <sub>Made with ❤️ by the <a href="https://mahamerujs.bintvn.co">MahameruJS</a> team. Have a great day!</sub>
+</p>
