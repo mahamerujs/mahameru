@@ -245,7 +245,6 @@ async function onInit() {
 
   await cp(selectedTemplate.dir, targetDir, { recursive: true });
 
-  let allowScripts: PackageJson['allowScripts'] | undefined = undefined;
   const packageJson = { ...selectedTemplate.packageJson };
 
   packageJson.name = answers.projectName;
@@ -254,11 +253,6 @@ async function onInit() {
   delete packageJson.title;
 
   packageJson.description = '';
-
-  if (packageJson.allowScripts) {
-    allowScripts = packageJson.allowScripts;
-    delete packageJson.allowScripts;
-  }
 
   await writePackageJsonFile(packageJson, join(targetDir, 'package.json'));
 
@@ -282,8 +276,12 @@ async function onInit() {
     packageJson.devDependencies,
   );
 
-  if (allowScripts) {
-    const newPackageJson = await readPackageJsonFile(targetDir);
+  const newPackageJson = await readPackageJsonFile(targetDir);
+
+  if (newPackageJson.allowScripts) {
+    const allowScripts = newPackageJson.allowScripts;
+
+    delete newPackageJson.allowScripts;
 
     newPackageJson.allowScripts = allowScripts;
 
