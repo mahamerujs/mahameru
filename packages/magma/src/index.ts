@@ -3,7 +3,7 @@ import { existsSync, globSync } from 'node:fs';
 import { basename, dirname, extname, join, relative } from 'node:path';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
-import { createLogger, MahameruPlugin, Generator } from '@mahameru/diatrema';
+import { createLogger, Plugin, Generator } from '@mahameru/diatrema';
 
 import { MagmaResponse } from './magma-response';
 import { MagmaRequest } from './magma-request';
@@ -106,7 +106,7 @@ const defaultOptions: MagmaOptions = {
   trailingSlash: false,
 };
 
-export default class Magma extends MahameruPlugin<MagmaOptions> {
+export default class Magma extends Plugin<MagmaOptions> {
   public readonly name: string = 'Magma';
   public readonly slugName: string = 'magma';
   protected httpServer: HTTPServerInstance;

@@ -6,7 +6,7 @@ export interface BasePluginOptions {
   dev?: boolean;
 }
 
-export abstract class MahameruPlugin<O extends BasePluginOptions = BasePluginOptions> {
+export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
   public abstract readonly name: string;
   public abstract readonly slugName: string;
   protected logger!: Logger;

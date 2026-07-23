@@ -1,7 +1,7 @@
 export * from './diatrema';
 export * from './event-emitter';
 export * from './logger';
-export * from './mahameru-plugin';
+export * from './plugin';
 
 import { Diatrema } from './diatrema';
 

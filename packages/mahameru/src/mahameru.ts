@@ -1,6 +1,6 @@
 import {
   Diatrema,
-  MahameruPlugin,
+  Plugin,
   type DiatremaOptions,
   diatremaDefaultConfig,
   type BasePluginOptions,
@@ -486,7 +486,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
               new (
                 options?: BasePluginOptions,
                 createLogger?: (name: string | string[], debug?: boolean) => Logger,
-              ) => MahameruPlugin
+              ) => Plugin
             >
           >(join(pluginDirPath, 'index.js'));
 

@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { EventEmitter } from './event-emitter';
 import { createLogger, type Logger } from './logger';
 
-import type { MahameruPlugin } from './mahameru-plugin';
+import type { Plugin } from './plugin';
 import { createRequire } from 'node:module';
 
 export type DiatremaEvents = {
@@ -43,7 +43,7 @@ export const diatremaDefaultConfig: DiatremaOptions = {
 export class Diatrema extends EventEmitter<DiatremaEvents> {
   protected _initialized = false;
   protected _isShuttingDown = false;
-  protected _plugins = new Map<string, MahameruPlugin>();
+  protected _plugins = new Map<string, Plugin>();
   protected logger: Logger;
   public readonly options: DiatremaOptions;
 
@@ -70,7 +70,7 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     return this._isShuttingDown;
   }
 
-  get plugins(): Record<string, MahameruPlugin> {
+  get plugins(): Record<string, Plugin> {
     return Object.fromEntries(this._plugins);
   }
 
@@ -88,11 +88,11 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     this.emit('ready', { mode: this.options.dev ? 'development' : 'production' });
   }
 
-  public setPlugin<T extends MahameruPlugin>(pluginName: string, plugin: T) {
+  public setPlugin<T extends Plugin>(pluginName: string, plugin: T) {
     this._plugins.set(pluginName, plugin);
   }
 
-  public getPlugin<T extends MahameruPlugin>(pluginName: string): T | undefined {
+  public getPlugin<T extends Plugin>(pluginName: string): T | undefined {
     return this._plugins.get(pluginName) as T | undefined;
   }
 
