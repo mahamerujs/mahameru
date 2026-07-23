@@ -11,7 +11,13 @@ import ora from 'ora';
 import pc from 'picocolors';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
-import { clearScreen, getNpmRunner, runCommand, writePackageJsonFile } from './utils';
+import {
+  clearScreen,
+  getNpmRunner,
+  readPackageJsonFile,
+  runCommand,
+  writePackageJsonFile,
+} from './utils';
 import { cp, readdir, readFile, rm } from 'node:fs/promises';
 import { PackageJson } from 'type-fest';
 import crypto from 'node:crypto';
@@ -237,60 +243,52 @@ async function onInit() {
     process.exit(0);
   }
 
-  const downloadSpinner = ora('Downloading template...\n').start();
+  await cp(selectedTemplate.dir, targetDir, { recursive: true });
 
-  try {
-    await cp(selectedTemplate.dir, targetDir, { recursive: true });
+  let allowScripts: PackageJson['allowScripts'] | undefined = undefined;
+  const packageJson = { ...selectedTemplate.packageJson };
 
-    const packageJson = { ...selectedTemplate.packageJson };
+  packageJson.name = answers.projectName;
+  packageJson.version = '0.0.0';
 
-    packageJson.name = answers.projectName;
-    packageJson.version = '0.0.0';
+  delete packageJson.title;
 
-    delete packageJson.dependencies;
-    delete packageJson.devDependencies;
+  packageJson.description = '';
 
-    await writePackageJsonFile(packageJson, join(targetDir, 'package.json'));
-
-    downloadSpinner.succeed(pc.green('Template downloaded successfully!'));
-  } catch (err) {
-    downloadSpinner.fail(pc.red('Failed to download template.'));
-    console.error(err);
-
-    if (existsSync(targetDir)) {
-      await rm(targetDir, { force: true, recursive: true });
-    }
-
-    await deleteRepoTempDir();
-
-    process.exit(1);
+  if (packageJson.allowScripts) {
+    allowScripts = packageJson.allowScripts;
+    delete packageJson.allowScripts;
   }
 
-  if (
-    selectedTemplate.packageJson.dependencies &&
-    Object.keys(selectedTemplate.packageJson.dependencies).length > 0
-  )
+  await writePackageJsonFile(packageJson, join(targetDir, 'package.json'));
+
+  if (packageJson.dependencies && Object.keys(packageJson.dependencies).length > 0)
     console.log(
       pc.cyan(
-        `\nInstalling dependencies:\n   ${Object.keys(selectedTemplate.packageJson.dependencies).join('\n   ')}`,
+        `\nInstalling dependencies:\n   ${Object.keys(packageJson.dependencies).join('\n   ')}`,
       ),
     );
 
-  if (
-    selectedTemplate.packageJson.devDependencies &&
-    Object.keys(selectedTemplate.packageJson.devDependencies).length > 0
-  )
+  if (packageJson.devDependencies && Object.keys(packageJson.devDependencies).length > 0)
     console.log(
       pc.cyan(
-        `\nInstalling dev dependencies:\n   ${Object.keys(selectedTemplate.packageJson.devDependencies).join('\n   ')}\n`,
+        `\nInstalling dev dependencies:\n   ${Object.keys(packageJson.devDependencies).join('\n   ')}\n`,
       ),
     );
 
   await installProjectDependencies(
     targetDir,
-    selectedTemplate.packageJson.dependencies,
-    selectedTemplate.packageJson.devDependencies,
+    packageJson.dependencies,
+    packageJson.devDependencies,
   );
+
+  if (allowScripts) {
+    const newPackageJson = await readPackageJsonFile(targetDir);
+
+    newPackageJson.allowScripts = allowScripts;
+
+    await writePackageJsonFile(newPackageJson, join(targetDir, 'package.json'));
+  }
 
   if (isGitInstalled()) {
     console.log('');
