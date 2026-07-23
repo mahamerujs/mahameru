@@ -1,0 +1,47 @@
+{
+  "name": "@mahameru/plugin",
+  "version": "0.0.0",
+  "description": "A package for creating plugins for MahameruJS.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "build:js": "tsup",
+    "build:types": "tsc",
+    "build": "rimraf dist && tsup && tsc",
+    "dev:js": "tsup --watch",
+    "dev:types": "tsc --watch --preserveWatchOutput",
+    "dev": "pnpm dev:js && pnpm dev:types"
+  },
+  "keywords": [
+    "node",
+    "framework",
+    "mahameru",
+    "mahamerujs",
+    "plugin"
+  ],
+  "author": "Bintan <hello@bintvn.co>",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "type-fest": "^5.8.0"
+  }
+}

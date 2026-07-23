@@ -247,6 +247,16 @@ importers:
         version: 5.8.0
     publishDirectory: dist
 
+  packages/plugin:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.1
+      type-fest:
+        specifier: ^5.8.0
+        version: 5.8.0
+    publishDirectory: dist
+
   test:
     dependencies:
       '@mahameru/magma':
