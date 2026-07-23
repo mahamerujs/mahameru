@@ -184,6 +184,43 @@ async function generateModule(name: string) {
   await magmaGenerator.generate();
 }
 
-async function generateRoute(_name: string) {
-  logger.info(`...`);
+async function generateRoute(name: string) {
+  const templateDirPath = join(rootPath, 'node_modules', '@mahameru/magma', 'templates');
+  const routePath = join(rootPath, 'src', 'routes', name);
+  const routeParamIdPath = join(rootPath, 'src', 'routes', name, '[id]');
+  const pacalName = toPascalCase(name);
+  const camelName = toCamelCase(name);
+  const titleName = toTitleCase(name);
+  const kebabName = toKebabCase(name);
+
+  let routeIndexTemplateString = (await readFile(
+    join(templateDirPath, 'route-only-index.txt'),
+    'utf8',
+  )) as string;
+  routeIndexTemplateString = routeIndexTemplateString
+    .replace(/{{namePascalCase}}/g, pacalName)
+    .replace(/{{nameCamelCase}}/g, camelName)
+    .replace(/{{nameTitleCase}}/g, titleName)
+    .replace(/{{nameKebabCase}}/g, kebabName);
+
+  let routeParamIdTemplateString = (await readFile(
+    join(templateDirPath, 'route-only-param-id.txt'),
+    'utf8',
+  )) as string;
+  routeParamIdTemplateString = routeParamIdTemplateString
+    .replace(/{{namePascalCase}}/g, pacalName)
+    .replace(/{{nameCamelCase}}/g, camelName)
+    .replace(/{{nameTitleCase}}/g, titleName)
+    .replace(/{{nameKebabCase}}/g, kebabName);
+
+  await mkdir(routePath, { recursive: true });
+  await mkdir(routeParamIdPath, { recursive: true });
+
+  await writeFile(join(routePath, 'route.ts'), routeIndexTemplateString, 'utf8');
+  await writeFile(join(routeParamIdPath, 'route.ts'), routeParamIdTemplateString, 'utf8');
+
+  const magmaGenerator = new MagmaGenerator();
+  magmaGenerator.outputTypesDirPath = outputTypesDirPath;
+  magmaGenerator.sourceDirPath = join(rootPath, 'src');
+  await magmaGenerator.generate();
 }

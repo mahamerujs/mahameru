@@ -1,0 +1,17 @@
+import { MagmaResponse, type RouteHandler } from '@mahameru/magma';
+
+export const GET: RouteHandler = ({ request }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+  });
+};
+
+export const POST: RouteHandler = async ({ request }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+  });
+};

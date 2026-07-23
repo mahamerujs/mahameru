@@ -1,0 +1,37 @@
+import { MagmaResponse, type RouteHandler } from '@mahameru/magma';
+
+export const GET: RouteHandler = ({ request, params }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+    params,
+  });
+};
+
+export const PATCH: RouteHandler = async ({ request, params }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+    params,
+  });
+};
+
+export const PUT: RouteHandler = async ({ request, params }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+    params,
+  });
+};
+
+export const DELETE: RouteHandler = ({ request, params }) => {
+  return MagmaResponse.json({
+    success: true,
+    method: request.method,
+    route: '{{nameKebabCase}}',
+    params,
+  });
+};
