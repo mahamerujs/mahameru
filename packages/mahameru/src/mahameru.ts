@@ -6,6 +6,7 @@ import {
   type BasePluginOptions,
   createLogger,
   type Logger,
+  EventEmitter,
 } from '@mahameru/diatrema';
 import { join } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -43,13 +44,18 @@ const mahameruDefaultOptions: MahameruOptions = {
   sourceDirPath: join(diatremaDefaultConfig.rootPath, 'src'),
 };
 
-export class Mahameru {
+export type MahameruEvents = {
+  ready: [mode: 'development' | 'production', data: { port?: number; host?: string }];
+};
+
+export class Mahameru extends EventEmitter<MahameruEvents> {
   protected readonly diatrema: Diatrema;
   protected _options: MahameruOptions;
   protected spinner?: Ora;
   protected logger: Logger;
 
   constructor(options?: Partial<MahameruOptions>, spinner?: Ora) {
+    super();
     this._options = { ...mahameruDefaultOptions, ...options };
     this.logger = createLogger('Mahameru', this._options.debug);
     this.spinner = this._options.debug ? undefined : spinner;
