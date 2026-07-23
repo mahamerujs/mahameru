@@ -8,6 +8,7 @@ import nodeExternal from 'webpack-node-externals';
 import { copyFileSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import { PackageJson } from 'type-fest';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,7 +50,7 @@ const config: webpack.Configuration = {
             comments: /^!/,
           },
         },
-      } as any),
+      }),
     ],
   },
   externalsPresets: { node: true },
@@ -138,9 +139,9 @@ const config: webpack.Configuration = {
     }),
     {
       apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('CopyAfterBundlePlugin', (compilation) => {
+        compiler.hooks.afterEmit.tap('CopyAfterBundlePlugin', () => {
           const packageJsonString = readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8');
-          const packageJson = JSON.parse(packageJsonString);
+          const packageJson = JSON.parse(packageJsonString) as PackageJson;
 
           packageJson.main = './cli.js';
           packageJson.bin = {
@@ -151,6 +152,7 @@ const config: webpack.Configuration = {
           delete packageJson.dependencies;
           delete packageJson.devDependencies;
           delete packageJson.scripts;
+          delete packageJson.publishConfig;
 
           writeFileSync(
             path.resolve(__dirname, 'dist/package.json'),

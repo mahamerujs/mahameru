@@ -180,6 +180,7 @@ importers:
       webpack-node-externals:
         specifier: ^3.0.0
         version: 3.0.0
+    publishDirectory: dist
 
   packages/diatrema:
     devDependencies:

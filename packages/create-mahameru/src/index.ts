@@ -4,20 +4,28 @@
 import { Command } from 'commander';
 import { version } from '../package.json';
 import inquirer from 'inquirer';
-import { existsSync, rmdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path, { join } from 'node:path';
 import { downloadTemplate } from 'giget';
 import ora from 'ora';
 import pc from 'picocolors';
+import os from 'node:os';
 import { execSync } from 'node:child_process';
-import os from 'os';
-import crypto from 'node:crypto';
 import { clearScreen, getNpmRunner, runCommand, writePackageJsonFile } from './utils';
-import { cp, readdir, readFile } from 'node:fs/promises';
+import { cp, readdir, readFile, rm } from 'node:fs/promises';
 import { PackageJson } from 'type-fest';
+import crypto from 'node:crypto';
 
-const repoUuid = crypto.randomUUID();
-const tempDir = os.tmpdir();
+const uuid = crypto.randomUUID();
+const repoTempDir = join(os.tmpdir(), `mahameru-template-${uuid}`);
+const shutdown = async () => {
+  await deleteRepoTempDir();
+
+  process.exit(0);
+};
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 (async () => {
   try {
@@ -65,6 +73,12 @@ function isGitInstalled() {
     return true;
   } catch {
     return false;
+  }
+}
+
+async function deleteRepoTempDir() {
+  if (existsSync(repoTempDir)) {
+    await rm(repoTempDir, { recursive: true, force: true });
   }
 }
 
@@ -123,15 +137,21 @@ async function installProjectDependencies(
   }
 }
 
+let selectedPackageJson: PackageJson | null = null;
+
 async function onInit() {
   clearScreen();
   console.log(`${pc.bold(pc.cyan('▲ MahameruJS'))} ${pc.dim(`Project Initializer v${version}`)}\n`);
 
-  const tempRepoDir = join(tempDir, repoUuid);
-  const { dir: repoTempDir } = await downloadTemplate(`github:mahamerujs/templates`, {
-    dir: tempRepoDir,
-    force: true,
-  });
+  const spinnerDownloadTemplate = ora('Downloading templates...').start();
+  await downloadTemplate(`github:mahamerujs/templates`, { dir: repoTempDir });
+
+  spinnerDownloadTemplate.succeed('Templates downloaded.');
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  clearScreen();
+  console.log(`${pc.bold(pc.cyan('▲ MahameruJS'))} ${pc.dim(`Project Initializer v${version}`)}\n`);
 
   const result = await readdir(repoTempDir, { withFileTypes: true });
 
@@ -193,8 +213,8 @@ async function onInit() {
         })),
       },
     ])
-    .catch((error) => {
-      if (error.name === 'ExitPromptError') process.exit(0);
+    .catch(async (error) => {
+      if (error.name === 'ExitPromptError') await shutdown();
 
       throw error;
     });
@@ -206,6 +226,8 @@ async function onInit() {
 
     process.exit(1);
   }
+
+  selectedPackageJson = selectedTemplate.packageJson;
 
   const targetDir = path.join(process.cwd(), answers.projectName);
 
@@ -235,7 +257,11 @@ async function onInit() {
     downloadSpinner.fail(pc.red('Failed to download template.'));
     console.error(err);
 
-    if (existsSync(targetDir)) rmdirSync(targetDir);
+    if (existsSync(targetDir)) {
+      await rm(targetDir, { force: true, recursive: true });
+    }
+
+    await deleteRepoTempDir();
 
     process.exit(1);
   }
@@ -283,12 +309,25 @@ async function onInit() {
 
   console.log('---\n');
 
-  console.log(`Create your first module by running:`);
-  console.log(pc.yellow(`   cd ${answers.projectName}`));
-  console.log(pc.yellow('   npm run generate'));
-  console.log('---\n');
+  if (selectedPackageJson.scripts && Object.keys(selectedPackageJson.scripts).length > 0) {
+    console.log(`Available commands:`);
+
+    for (const [key] of Object.entries(selectedPackageJson.scripts)) {
+      console.log(pc.yellow(`   npm run ${key}`));
+    }
+
+    console.log('---\n');
+  }
+
+  if (selectedPackageJson.dependencies?.['@mahameru/magma']) {
+    console.log(`Create your first module by running:`);
+    console.log(pc.yellow('   npm run magma'));
+    console.log('---\n');
+  }
 
   console.log(
     `Have a question? Join the discord server at ${pc.cyan('https://discord.gg/7PNmMxykSF')}\n`,
   );
+
+  await deleteRepoTempDir();
 }
