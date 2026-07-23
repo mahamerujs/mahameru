@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.10
+
+### Patch Changes
+
+- Add prompt to generate another module or route
+
 ## 0.0.9
 
 ### Patch Changes
