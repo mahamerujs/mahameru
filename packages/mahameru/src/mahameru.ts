@@ -15,7 +15,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server';
 import type { Ora } from 'ora';
 import type { TypescriptServerParentToChildMessage } from './workers/typescript-server';
-import { createRequire } from 'node:module';
 
 export type MahameruOptions = DiatremaOptions & {
   outputTypesDirPath: string;
@@ -28,11 +27,14 @@ type MahameruGeneratorOptions = {
   outputTypesDirPath: string;
 };
 
+interface CustomNodeRequire {
+  cache: Record<string, unknown>;
+  resolve(id: string): string;
+}
+
 declare global {
   var mahameruEnv: Record<string, unknown> | undefined;
 }
-
-const requireModule = createRequire(import.meta.url);
 
 const mahameruDefaultOptions: MahameruOptions = {
   ...diatremaDefaultConfig,
@@ -480,7 +482,7 @@ export class Mahameru {
                 createLogger?: (name: string | string[], debug?: boolean) => Logger,
               ) => MahameruPlugin
             >
-          >(this.options.moduleType, join(pluginDirPath, 'index.js'));
+          >(join(pluginDirPath, 'index.js'));
 
           if (!module) {
             this.logger.warn(`Failed to load plugin: ${name}. Plugin not found`);
@@ -589,25 +591,35 @@ export class Mahameru {
   }
 
   protected async require<T extends Record<string, unknown> = Record<string, unknown>>(
-    type: 'commonjs' | 'esm',
     resolvedFilePath: string,
   ): Promise<T | undefined> {
     const noCache = this.options.dev;
 
-    if (!existsSync(resolvedFilePath)) return;
+    if (!existsSync(resolvedFilePath)) return undefined;
 
-    if (type === 'commonjs') {
-      if (noCache) {
-        delete requireModule.cache[resolvedFilePath];
+    if (noCache) {
+      const globalObj = globalThis as unknown as { require?: CustomNodeRequire };
+      const globalRequire =
+        typeof require !== 'undefined'
+          ? (require as unknown as CustomNodeRequire)
+          : globalObj.require;
+
+      if (globalRequire?.cache) {
+        try {
+          const resolved = globalRequire.resolve(resolvedFilePath);
+          delete globalRequire.cache[resolved];
+        } catch {
+          // ignore
+        }
       }
-
-      return requireModule(resolvedFilePath) as T;
     }
 
     let fileUrl = pathToFileURL(resolvedFilePath).href;
 
-    if (noCache) fileUrl += `?update=${Date.now()}`;
+    if (noCache) {
+      fileUrl += `?update=${Date.now()}`;
+    }
 
-    return (await import(fileUrl)) as T;
+    return (await import(fileUrl)) as T & { default?: T };
   }
 }

@@ -8,7 +8,6 @@ export default function devTest({ rootPath }: { rootPath: string; version: strin
         rootPath,
         dev: true,
         debug: true,
-        moduleType: 'esm',
       });
 
       const shutdown = async (_signal: NodeJS.Signals) => {
