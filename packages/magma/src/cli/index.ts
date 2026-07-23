@@ -16,66 +16,11 @@ const logger = {
   info: (...data: unknown[]) => console.log(...data),
   error: (...data: unknown[]) => console.error(...data),
 };
+let totalModulesGenerated = 0;
 
 (async () => {
   try {
-    process.stdout.write('\u001b[2J\u001b[0;0H\u001b[3J');
-
-    try {
-      const packageJson = JSON.parse(
-        await readFile(join(rootPath, 'node_modules', '@mahameru/magma', 'package.json'), 'utf-8'),
-      ) as unknown as Record<string, string>;
-      intro(`${MAGMA_TITLE} CLI ${pc.dim(`v${packageJson.version}`)}`);
-    } catch {
-      intro(`${MAGMA_TITLE} CLI`);
-    }
-
-    const type = await select({
-      message: 'Pick what you want to generate',
-      options: [
-        { value: 'module', label: 'Module + Routes' },
-        { value: 'route', label: 'Route Only' },
-      ],
-    });
-
-    if (isCancel(type)) {
-      cancel('Operation cancelled.');
-      process.exit(0);
-    }
-
-    let name = await text({
-      message: `What's the name of the ${type}?`,
-      placeholder: 'Not sure',
-      initialValue: '',
-      defaultValue: 'user',
-      validate(value) {
-        if (value && value.length === 0) return `Name is required!`;
-      },
-    });
-
-    if (isCancel(name)) {
-      cancel('Operation cancelled.');
-
-      process.exit(0);
-    }
-
-    name = toKebabCase(name);
-
-    const s = spinner();
-
-    if (type === 'module') {
-      s.start('Generating module and routes ${name}...');
-      await generateModule(name);
-      s.stop(`Module and routes ${name} generated successfully!`);
-    }
-
-    if (type === 'route') {
-      s.start(`Generating routes of ${name}...`);
-      await generateRoute(name);
-      s.stop(`Routes of ${name} generated successfully!`);
-    }
-
-    outro(`You're all set!`);
+    await main();
 
     process.exit(0);
   } catch (error) {
@@ -84,6 +29,94 @@ const logger = {
     process.exit(1);
   }
 })();
+
+async function main() {
+  try {
+    process.stdout.write('\u001b[2J\u001b[0;0H\u001b[3J');
+
+    const packageJson = JSON.parse(
+      await readFile(join(rootPath, 'node_modules', '@mahameru/magma', 'package.json'), 'utf-8'),
+    ) as unknown as Record<string, string>;
+    intro(`${MAGMA_TITLE} CLI ${pc.dim(`v${packageJson.version}`)}`);
+  } catch {
+    intro(`${MAGMA_TITLE} CLI`);
+  }
+
+  const type = await select({
+    message: 'Pick what you want to generate',
+    options: [
+      { value: 'module', label: 'Module + Routes' },
+      { value: 'route', label: 'Route Only' },
+    ],
+  });
+
+  if (isCancel(type)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
+
+  let name = await text({
+    message: `What's the name of the ${type}?`,
+    placeholder: 'Not sure',
+    initialValue: '',
+    defaultValue: 'user',
+    validate(value) {
+      if (value && value.length === 0) return `Name is required!`;
+    },
+  });
+
+  if (isCancel(name)) {
+    cancel('Operation cancelled.');
+
+    process.exit(0);
+  }
+
+  name = toKebabCase(name);
+
+  const s = spinner();
+
+  if (type === 'module') {
+    s.start('Generating module and routes ${name}...');
+    await generateModule(name);
+    s.stop(`Module and routes ${name} generated successfully!`);
+  }
+
+  if (type === 'route') {
+    s.start(`Generating routes of ${name}...`);
+    await generateRoute(name);
+    s.stop(`Routes of ${name} generated successfully!`);
+  }
+
+  totalModulesGenerated += 1;
+
+  await generateAnother();
+}
+
+async function generateAnother() {
+  const answer = await select({
+    message: 'Do you want to generate another?',
+    options: [
+      { value: true, label: 'Yes!' },
+      { value: false, label: 'No' },
+    ],
+  });
+
+  if (isCancel(answer)) {
+    cancel('Operation cancelled.');
+
+    process.exit(0);
+  }
+
+  if (!answer) {
+    outro(`Enjoy your new ${totalModulesGenerated > 1 ? 'modules' : 'module'}!`);
+
+    process.exit(0);
+  }
+
+  await main();
+
+  outro(`You're all set!`);
+}
 
 async function generateModule(name: string) {
   const templateDirPath = join(rootPath, 'node_modules', '@mahameru/magma', 'templates');
