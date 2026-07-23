@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.11
+
+### Patch Changes
+
+- Implement generating route only
+
 ## 0.0.10
 
 ### Patch Changes
