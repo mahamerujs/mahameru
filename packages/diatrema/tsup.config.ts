@@ -53,6 +53,12 @@ const onSuccess = async () => {
 
     packageJson = replaceDistPath(packageJson);
 
+    if (packageJson.devDependencies) {
+      if (packageJson.devDependencies['@mahameru/tsconfig']) {
+        delete packageJson.devDependencies['@mahameru/tsconfig'];
+      }
+    }
+
     await writeFile('dist/package.json', JSON.stringify(packageJson, null, 2), 'utf-8');
     await copyFile('README.md', 'dist/README.md');
   } catch (error) {
