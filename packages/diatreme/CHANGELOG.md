@@ -1,5 +1,11 @@
 # @mahameru/diatreme
 
+## 0.0.10
+
+### Patch Changes
+
+- Initial publish
+
 ## 0.0.9
 
 ### Patch Changes
