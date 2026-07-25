@@ -70,6 +70,8 @@ export class Diatreme extends EventEmitter<DiatremeEvents> {
   public async initialize(): Promise<void> {
     if (this._initialized) return;
 
+    this.logger.debug('Initializing...');
+
     for (const plugin of this._plugins.values()) {
       plugin.setPlugins(this._plugins);
 
@@ -77,6 +79,8 @@ export class Diatreme extends EventEmitter<DiatremeEvents> {
     }
 
     this._initialized = true;
+
+    this.logger.debug('Initializing... Done');
 
     this.emit('ready', { mode: this.options.dev ? 'development' : 'production' });
   }
