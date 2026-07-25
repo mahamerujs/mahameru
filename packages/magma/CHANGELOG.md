@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.12
+
+### Patch Changes
+
+- Add @mahameru/plugin
+
 ## 0.0.11
 
 ### Patch Changes
