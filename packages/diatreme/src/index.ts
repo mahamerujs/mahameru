@@ -1,14 +1,9 @@
-export * from './event-emitter.js';
-
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 
 import { EventEmitter } from './event-emitter.js';
 import { createLogger, type Logger } from './logger.js';
 
 import type { Plugin } from '@mahameru/plugin';
-import { createRequire } from 'node:module';
 
 export type DiatremeEvents = {
   ready: [data: { mode: 'development' | 'production'; port?: number; host?: string }];
@@ -22,10 +17,7 @@ export type DiatremeOptions = {
   productionDir: string;
   developmentDir: string;
   initiatorFilePath?: string;
-  moduleType: 'commonjs' | 'esm';
 };
-
-const requireModule = createRequire(import.meta.url);
 
 export const diatremeDefaultConfig: DiatremeOptions = {
   dev: false,
@@ -36,7 +28,6 @@ export const diatremeDefaultConfig: DiatremeOptions = {
   },
   productionDir: '.mahameru',
   developmentDir: '.mahameru',
-  moduleType: 'esm',
 };
 
 /**
@@ -122,38 +113,7 @@ export class Diatreme extends EventEmitter<DiatremeEvents> {
     this._initialized = false;
     this.logger.debug('Shutting down... Done');
   }
-
-  protected async require<T extends Record<string, unknown> = Record<string, unknown>>(
-    type: 'commonjs' | 'esm',
-    resolvedFilePath: string,
-  ): Promise<T | undefined> {
-    const noCache = this.options.dev;
-
-    if (!existsSync(resolvedFilePath)) return;
-
-    if (type === 'commonjs') {
-      if (noCache) {
-        delete requireModule.cache[resolvedFilePath];
-      }
-
-      return requireModule(resolvedFilePath) as T;
-    }
-
-    let fileUrl = pathToFileURL(resolvedFilePath).href;
-
-    if (noCache) fileUrl += `?update=${Date.now()}`;
-
-    return (await import(fileUrl)) as T;
-  }
-
-  protected getDefaultExport<T>(module: Record<string, T>, filePath: string) {
-    const defaultExportName = Object.keys(module).find((key) => key === 'default');
-
-    if (!defaultExportName)
-      throw new Error(`Module in file '${filePath}' does not have a default export.`);
-
-    return module[defaultExportName];
-  }
 }
 
+export * from './event-emitter.js';
 export default Diatreme;
