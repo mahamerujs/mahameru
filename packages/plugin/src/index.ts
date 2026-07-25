@@ -1,4 +1,8 @@
+import { Generator } from './generator.js';
 import { type Logger } from './logger.js';
+
+export { Generator };
+export { type Logger, createLogger } from './logger.js';
 
 export interface BasePluginOptions {
   debug?: boolean;
@@ -13,6 +17,7 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
   protected _initialized = false;
   protected _isShuttingDown = false;
   protected _generator?: Generator;
+  protected _plugins: Map<string, Plugin> = new Map();
 
   constructor(options: Partial<O>) {
     this._options = options as O;
@@ -28,6 +33,10 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
 
   get generator() {
     return this._generator;
+  }
+
+  public setPlugins(plugins: Map<string, Plugin>) {
+    this._plugins = plugins;
   }
 
   public async initialize(): Promise<void> {

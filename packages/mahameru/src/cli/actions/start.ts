@@ -1,4 +1,5 @@
-import Diatrema, { createLogger } from '@mahameru/diatrema';
+import Diatrema from '@mahameru/diatrema';
+import { createLogger } from '../../logger.js';
 import type { MahameruIPCMessageChild } from '../../types/index.js';
 import { printServerReady } from '../../utils/printServerReady.js';
 import { isPortAvailable } from '../../utils/free-port-finder.js';

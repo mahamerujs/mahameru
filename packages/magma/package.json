@@ -45,15 +45,12 @@
   "engines": {
     "node": ">=20.6.0"
   },
-  "peerDependencies": {
-    "@mahameru/diatrema": "workspace:*"
-  },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
+    "@mahameru/plugin": "workspace:*",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@mahameru/diatrema": "workspace:*",
     "@mahameru/tsconfig": "workspace:*",
     "@types/node": "^26.1.0",
     "type-fest": "^5.8.0"

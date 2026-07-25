@@ -3,7 +3,7 @@ import { existsSync, globSync } from 'node:fs';
 import { basename, dirname, extname, join, relative } from 'node:path';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
-import { createLogger, Plugin, Generator } from '@mahameru/diatrema';
+import { createLogger, Plugin, Generator, type Logger } from '@mahameru/plugin';
 
 import { MagmaResponse } from './magma-response.js';
 import { MagmaRequest } from './magma-request.js';
@@ -120,6 +120,7 @@ export default class Magma extends Plugin<MagmaOptions> {
   protected route: Route;
   protected _favicon?: Buffer<ArrayBuffer>;
   protected request: Map<number, number> = new Map();
+  protected logger: Logger;
 
   constructor(options: Partial<MagmaOptions>) {
     super({ ...defaultOptions, ...options });
@@ -165,6 +166,7 @@ export default class Magma extends Plugin<MagmaOptions> {
   protected async _onDevHRM(filePath: string): Promise<void> {
     await this.container.onDevHRM(filePath);
   }
+
   protected async boot() {
     await this.container.discover();
 

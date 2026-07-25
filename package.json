@@ -2,7 +2,7 @@
   "name": "mahamerujs",
   "private": true,
   "scripts": {
-    "prepare": "turbo run build --filter=@mahameru/cli... --filter=create-mahameru... --filter=@mahameru/diatrema... --filter=@mahameru/magma... --filter=mahameru...",
+    "prepare": "turbo run build --filter=@mahameru/cli... --filter=create-mahameru... --filter=@mahameru/diatrema... --filter=@mahameru/magma... --filter=mahameru... --filter=@mahameru/plugin...",
     "dev": "turbo watch dev --filter=blank-test...",
     "dev:blank": "turbo watch dev --filter=blank-test...",
     "dev:http": "turbo watch dev --filter=http-test...",

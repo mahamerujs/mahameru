@@ -7,7 +7,7 @@ import ts from 'typescript';
 import pc from 'picocolors';
 import { replaceTscAliasPaths } from 'tsc-alias';
 import { Generator } from './generator.js';
-import { createLogger, type Logger } from '@mahameru/diatrema';
+import { createLogger, type Logger } from '../logger.js';
 
 export type MahameruDevServerOptions = {
   rootPath: string;

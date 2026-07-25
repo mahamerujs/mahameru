@@ -16,7 +16,7 @@ import type {
   RouteHandler,
   RouteItem,
 } from './types.js';
-import { createLogger, type Logger } from '@mahameru/diatrema';
+import { createLogger, type Logger } from '@mahameru/plugin';
 import { createRequire } from 'node:module';
 
 /**

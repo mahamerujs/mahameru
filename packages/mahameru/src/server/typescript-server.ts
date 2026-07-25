@@ -1,4 +1,5 @@
-import { createLogger, EventEmitter, type Logger } from '@mahameru/diatrema';
+import { createLogger, type Logger } from '../logger.js';
+import { EventEmitter } from '@mahameru/diatrema';
 import { join, resolve } from 'node:path';
 import {
   createCompilerHost,

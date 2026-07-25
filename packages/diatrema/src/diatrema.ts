@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { EventEmitter } from './event-emitter.js';
 import { createLogger, type Logger } from './logger.js';
 
-import type { Plugin } from './plugin.ts';
+import type { Plugin } from '@mahameru/plugin';
 import { createRequire } from 'node:module';
 
 export type DiatremaEvents = {
@@ -78,7 +78,7 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     if (this._initialized) return;
 
     for (const plugin of this._plugins.values()) {
-      plugin.setDiatrema(this);
+      plugin.setPlugins(this._plugins);
 
       await plugin.initialize();
     }

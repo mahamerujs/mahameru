@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { readdir, readFile } from 'node:fs/promises';
-import { createLogger } from '@mahameru/diatrema';
+import { createLogger } from '../../logger.js';
 
 const logger = createLogger('Mahameru', true);
 

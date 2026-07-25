@@ -187,6 +187,9 @@ importers:
 
   packages/diatrema:
     devDependencies:
+      '@mahameru/plugin':
+        specifier: workspace:*
+        version: link:../plugin/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -203,13 +206,13 @@ importers:
       '@clack/prompts':
         specifier: ^1.7.0
         version: 1.7.0
+      '@mahameru/plugin':
+        specifier: workspace:*
+        version: link:../plugin/dist
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
     devDependencies:
-      '@mahameru/diatrema':
-        specifier: workspace:*
-        version: link:../diatrema/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -245,6 +248,9 @@ importers:
       '@mahameru/diatrema':
         specifier: workspace:*
         version: link:../diatrema/dist
+      '@mahameru/plugin':
+        specifier: workspace:*
+        version: link:../plugin/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig

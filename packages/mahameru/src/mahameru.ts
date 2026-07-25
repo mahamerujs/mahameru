@@ -1,13 +1,10 @@
 import {
   Diatrema,
-  Plugin,
   type DiatremaOptions,
   diatremaDefaultConfig,
-  type BasePluginOptions,
-  createLogger,
-  type Logger,
   EventEmitter,
 } from '@mahameru/diatrema';
+import { Plugin, type BasePluginOptions } from '@mahameru/plugin';
 import { join, resolve } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -16,6 +13,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server.ts';
 import type { Ora } from 'ora';
 import type { TypescriptServerParentToChildMessage } from './workers/typescript-server.ts';
+import { createLogger, type Logger } from './logger.js';
 
 export type MahameruMode = 'development' | 'production';
 export type MahameruOptions = DiatremaOptions & {

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import TypescriptServer, { type TypescriptServerEvents } from '../server/typescript-server.js';
 import { devEnvironmentCheck } from '../utils/dev-environment-check.js';
-import { createLogger } from '@mahameru/diatrema';
+import { createLogger } from '../logger.js';
 
 const logger = createLogger(['TypescriptServer', 'Worker', 'Build'], true);
 

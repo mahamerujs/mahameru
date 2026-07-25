@@ -1,4 +1,4 @@
-import { createLogger } from '@mahameru/diatrema';
+import { createLogger } from '../../logger.js';
 
 const logger = createLogger('Mahameru', true);
 

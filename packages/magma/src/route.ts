@@ -3,7 +3,7 @@ import { MagmaResponse } from './magma-response.js';
 import type { Container } from './container.js';
 import type { HTTPMethod, MagmaContext, RouteItem } from './types.js';
 import { MagmaErrorResponse } from './magma-error-response.js';
-import { createLogger, type Logger } from '@mahameru/diatrema';
+import { createLogger, type Logger } from '@mahameru/plugin';
 
 type RouteOptions = {
   debug: boolean;
