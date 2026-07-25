@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
-import { type MahameruConfigResult, mahameruDefaultConfig } from '../config';
+import { type MahameruConfigResult, mahameruDefaultConfig } from '../config.js';
 import pc from 'picocolors';
-import { exists } from '../helpers';
+import { exists } from '../helpers.js';
 
 /**
  * Loads the MahameruJS configuration file dynamically.

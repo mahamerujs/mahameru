@@ -1,7 +1,7 @@
 import { join } from 'node:path';
-import { devEnvironmentCheck } from '../utils/dev-environment-check';
+import { devEnvironmentCheck } from '../utils/dev-environment-check.js';
 import { rm } from 'node:fs/promises';
-import TypescriptServer, { type TypescriptServerEvents } from '../server/typescript-server';
+import TypescriptServer, { type TypescriptServerEvents } from '../server/typescript-server.js';
 
 export type TypescriptServerParentToChildMessage = { type: 'START' } | { type: 'SHUTDOWN' };
 

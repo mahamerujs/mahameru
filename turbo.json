@@ -1,45 +1,26 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "concurrency": "20",
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "build:js", "build:types"],
+      "dependsOn": ["^build"],
       "outputs": ["dist/**"]
-    },
-    "build:js": {
-      "dependsOn": ["^build:js"],
-      "inputs": ["src/**/*.ts", "src/**/*.js", "tsup.config.ts", "package.json"],
-      "outputs": ["dist/**"]
-    },
-    "build:types": {
-      "dependsOn": ["^build:types"],
-      "inputs": ["src/**/*.ts", "tsconfig.json", "../../tsconfig.base.json"],
-      "outputs": ["dist/**"]
-    },
-    "typecheck": {
-      "dependsOn": ["^build:types"],
-      "inputs": ["src/**/*.ts", "tsconfig.json", "../../tsconfig.base.json"],
-      "cache": true
-    },
-    "lint": {
-      "inputs": ["src/**/*.ts", "src/**/*.js", "../../eslint.config.mjs", "../../.prettierrc"],
-      "outputs": []
-    },
-    "clean:turbo": {
-      "cache": false
-    },
-    "dev:js": {
-      "cache": false,
-      "persistent": true
-    },
-    "dev:types": {
-      "cache": false,
-      "persistent": true
     },
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "lint": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint:fix": {
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["src/**/*.ts", "tsconfig.json"]
     }
   }
 }

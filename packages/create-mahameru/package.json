@@ -9,7 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "clean": "rimraf dist",
-    "build": "pnpm clean && webpack",
+    "build": "rimraf dist dist.tgz && webpack",
     "build:install": "pnpm build && npm i -g .\\dist.tgz"
   },
   "keywords": [

@@ -1,10 +1,10 @@
 import Diatrema, { createLogger } from '@mahameru/diatrema';
-import type { MahameruIPCMessageChild } from '../../types';
-import { printServerReady } from '../../utils/printServerReady';
-import { isPortAvailable } from '../../utils/free-port-finder';
-import { loadConfig } from '../../utils/load-config';
+import type { MahameruIPCMessageChild } from '../../types/index.js';
+import { printServerReady } from '../../utils/printServerReady.js';
+import { isPortAvailable } from '../../utils/free-port-finder.js';
+import { loadConfig } from '../../utils/load-config.js';
 import { join } from 'node:path';
-import MahameruError from '../../mahameru-error';
+import MahameruError from '../../mahameru-error.js';
 
 const logger = createLogger('Mahameru', true);
 

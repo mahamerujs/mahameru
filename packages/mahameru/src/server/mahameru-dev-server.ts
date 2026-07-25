@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import ts from 'typescript';
 import pc from 'picocolors';
 import { replaceTscAliasPaths } from 'tsc-alias';
-import { Generator } from './generator';
+import { Generator } from './generator.js';
 import { createLogger, type Logger } from '@mahameru/diatrema';
 
 export type MahameruDevServerOptions = {

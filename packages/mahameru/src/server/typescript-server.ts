@@ -1,12 +1,18 @@
 import { createLogger, EventEmitter, type Logger } from '@mahameru/diatrema';
 import { join, resolve } from 'node:path';
 import {
+  createCompilerHost,
   createEmitAndSemanticDiagnosticsBuilderProgram,
+  createModuleResolutionCache,
+  createProgram,
   createWatchCompilerHost,
   createWatchProgram,
   FileWatcherEventKind,
   flattenDiagnosticMessageText,
   getLineAndCharacterOfPosition,
+  getPreEmitDiagnostics,
+  parseJsonConfigFileContent,
+  resolveModuleName,
   sys,
   type BuilderProgram,
   type Diagnostic,
@@ -15,7 +21,7 @@ import {
 import pc from 'picocolors';
 import { readFileSync, writeFileSync, statSync, rmSync } from 'node:fs';
 import { replaceTscAliasPaths } from 'tsc-alias';
-import { rm } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 
 type TypescriptServerOptions = {
   rootPath: string;
@@ -189,13 +195,13 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
   }
 
   public stop() {
-    if (this.watchProgram) {
-      this.logger.debug('Shutting down...');
-      this.emit('status-update', 'STOPPING');
-      this._status = 'STOPPING';
-      this.watchProgram.close();
-      this.watchProgram = undefined;
-    }
+    if (!this.watchProgram) return;
+
+    this.logger.debug('Shutting down...');
+    this.emit('status-update', 'STOPPING');
+    this._status = 'STOPPING';
+    this.watchProgram.close();
+    this.watchProgram = undefined;
 
     try {
       rmSync(this.options.tsConfigDevFilePath, { force: true, recursive: true });
@@ -210,7 +216,99 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
     this.logger.debug('Shutting down... Done.');
   }
 
-  protected async tscAlias(callback: () => Promise<void> | void) {
+  public async build() {
+    const tsconfigObject = JSON.parse(readFileSync(this.options.tsConfigFilePath, 'utf-8'));
+
+    const { errors, fileNames, options } = parseJsonConfigFileContent(
+      tsconfigObject,
+      sys,
+      this.options.rootPath,
+    );
+
+    if (errors && errors.length > 0) {
+      this.logger.error(
+        'Error parsing tsconfig.json:',
+        errors.map((error) => error.messageText).join('\n'),
+      );
+
+      return false;
+    }
+
+    options.rootDir = this.options.rootPath;
+    options.outDir = this.options.developmentDirPath;
+
+    const host = createCompilerHost(options);
+
+    const compilerOptionsLookup = createModuleResolutionCache(
+      this.options.rootPath,
+      host.getCanonicalFileName,
+      options,
+    );
+
+    host.resolveModuleNameLiterals = (
+      moduleLiterals,
+      containingFile,
+      redirectedReference,
+      options,
+    ) => {
+      return moduleLiterals.map((moduleLiteral) => {
+        return resolveModuleName(
+          moduleLiteral.text,
+          containingFile,
+          options,
+          host,
+          compilerOptionsLookup,
+          redirectedReference,
+        );
+      });
+    };
+
+    const program = createProgram({
+      options,
+      rootNames: fileNames,
+      host: host,
+    });
+
+    const emitResult = program.emit();
+    const allDiagnostics = getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+    const errorReports: TypescriptError[] = [];
+
+    for (const diagnostic of allDiagnostics) {
+      const rawMessage = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+
+      if (diagnostic.file) {
+        const { line, character } = getLineAndCharacterOfPosition(
+          diagnostic.file,
+          diagnostic.start!,
+        );
+
+        const formatted = `${pc.red(pc.bold('[Typescript Error]'))} ${pc.underline(`${diagnostic.file.fileName}:${line + 1}:${character + 1}`)}:\n${pc.cyan(rawMessage)}`;
+        errorReports.push({
+          type: 'file',
+          message: `${diagnostic.file.fileName} (${line + 1},${character + 1}):\n${rawMessage}`,
+          rawMessage,
+          character,
+          line,
+          filePath: diagnostic.file.fileName,
+          formatted,
+        });
+      } else {
+        errorReports.push({
+          rawMessage,
+          type: 'message',
+          formatted: `${pc.red(pc.bold('[Typescript Error]'))}: ${pc.cyan(rawMessage)}`,
+        });
+      }
+    }
+
+    if (errorReports.length > 0) process.send?.({ type: 'ERROR', data: errorReports });
+
+    if (!emitResult.emitSkipped) await this.tscAlias();
+
+    return true;
+  }
+
+  protected async tscAlias(callback?: () => Promise<void> | void) {
     if (this.isResolvingAlias) return;
     this.isResolvingAlias = true;
 
@@ -220,9 +318,9 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
     );
 
     try {
-      const tsconfig = JSON.parse(readFileSync(this.options.tsConfigDevFilePath, 'utf-8'));
+      const tsconfig = JSON.parse(readFileSync(this.options.tsConfigFilePath, 'utf-8'));
 
-      writeFileSync(
+      await writeFile(
         tsconfigTsAliasFilePath,
         JSON.stringify(
           {
@@ -244,9 +342,9 @@ export default class TypescriptServer extends EventEmitter<TypescriptServerEvent
         resolveFullPaths: true,
       });
 
-      await callback();
+      if (callback) await callback();
     } catch (error) {
-      this.logger.debug('Error inside tscAlias process:', error);
+      this.logger.error('tscAlias:', error);
     } finally {
       await rm(tsconfigTsAliasFilePath, { force: true, recursive: true });
       this.isResolvingAlias = false;

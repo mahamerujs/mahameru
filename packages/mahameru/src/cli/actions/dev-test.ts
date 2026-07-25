@@ -1,4 +1,4 @@
-import { Mahameru } from '../../mahameru';
+import { Mahameru } from '../../mahameru.js';
 
 export default function devTest({ rootPath }: { rootPath: string; version: string }) {
   return async (_: { host: string; port: number }) => {

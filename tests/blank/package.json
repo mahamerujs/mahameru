@@ -1,5 +1,5 @@
 {
-  "name": "test",
+  "name": "blank-test",
   "description": "",
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,6 @@
     "magma": "magma"
   },
   "dependencies": {
-    "@mahameru/magma": "workspace:*",
     "mahameru": "workspace:*"
   },
   "devDependencies": {
@@ -19,7 +18,6 @@
   },
   "allowScripts": {
     "@mahameru/diatrema": true,
-    "@mahameru/magma": true,
     "mahameru": true
   }
 }

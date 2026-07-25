@@ -1,8 +1,8 @@
-export * from './diatrema';
-export * from './event-emitter';
-export * from './logger';
-export * from './plugin';
+export * from './diatrema.js';
+export * from './event-emitter.js';
+export * from './logger.js';
+export * from './plugin.js';
 
-import { Diatrema } from './diatrema';
+import { Diatrema } from './diatrema.js';
 
 export default Diatrema;

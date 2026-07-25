@@ -5,6 +5,7 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -16,12 +17,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "build:js": "tsup",
-    "build:types": "tsc",
-    "build": "rimraf dist && tsup && tsc",
-    "dev:js": "tsup --watch",
-    "dev:types": "tsc --watch --preserveWatchOutput",
-    "dev": "pnpm dev:js && pnpm dev:types"
+    "build": "rimraf dist .tsbuildinfo.json && tsup",
+    "dev": "tsc --watch"
   },
   "keywords": [
     "node",
@@ -42,6 +39,7 @@
     "node": ">=20.6.0"
   },
   "devDependencies": {
+    "@mahameru/tsconfig": "workspace:*",
     "@types/node": "^26.1.0",
     "type-fest": "^5.8.0"
   }

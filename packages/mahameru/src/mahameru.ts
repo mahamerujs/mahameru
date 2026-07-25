@@ -8,15 +8,16 @@ import {
   type Logger,
   EventEmitter,
 } from '@mahameru/diatrema';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
-import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server';
+import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server.ts';
 import type { Ora } from 'ora';
-import type { TypescriptServerParentToChildMessage } from './workers/typescript-server';
+import type { TypescriptServerParentToChildMessage } from './workers/typescript-server.ts';
 
+export type MahameruMode = 'development' | 'production';
 export type MahameruOptions = DiatremaOptions & {
   outputTypesDirPath: string;
   sourceDirPath: string;
@@ -74,6 +75,14 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
     } else {
       await this.startProdServer();
     }
+  }
+
+  public async build() {
+    await this.generator().env();
+    await this.discoverPlugins();
+    await this.generator().mahameruDts();
+    await this.generator().appendMahameruDTSToTsConfig();
+    await this.typescriptServer.build();
   }
 
   public async shutdown() {
@@ -281,6 +290,37 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
         } else {
           this.typescriptServer.process.kill('SIGINT');
         }
+      });
+    },
+    build: async () => {
+      const workerFilePath = resolve(join(__dirname, 'workers', 'build.js'));
+
+      return await new Promise<void>((resolve, reject) => {
+        const worker = spawn(process.execPath, [workerFilePath], {
+          cwd: this.options.rootPath,
+          stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+          env: {
+            MAHAMERU__ROOT_PATH: this.options.rootPath,
+            MAHAMERU__PRODUCTION_DIR_PATH: join(this.options.rootPath, this.options.productionDir),
+          },
+        });
+
+        worker.on('message', (message: Partial<TypescriptServerEvents>) => {
+          if (message['compile-error']) {
+            const [errors] = message['compile-error'];
+            this.logger.error(errors.map((m) => m.formatted).join('\n\n'));
+          }
+        });
+
+        worker.on('exit', (code) => {
+          if (code !== 0) {
+            reject('Build failed.');
+
+            return;
+          }
+
+          resolve();
+        });
       });
     },
     errors: undefined as string | undefined,

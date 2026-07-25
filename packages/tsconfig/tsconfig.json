@@ -1,0 +1,24 @@
+{
+  "extends": "./base.json",
+  "files": [],
+  "references": [
+    {
+      "path": "../cli"
+    },
+    {
+      "path": "../create-mahameru"
+    },
+    {
+      "path": "../diatrema"
+    },
+    {
+      "path": "../magma"
+    },
+    {
+      "path": "../mahameru"
+    },
+    {
+      "path": "../plugin"
+    }
+  ]
+}

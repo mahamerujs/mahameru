@@ -68,7 +68,7 @@ const onSuccess = async () => {
   }
 };
 
-export default defineConfig((options) => {
+export default defineConfig(() => {
   return {
     bundle: false,
     entry: ['src/**/*.ts'],
@@ -78,10 +78,8 @@ export default defineConfig((options) => {
     splitting: false,
     cjsInterop: true,
     sourcemap: true,
-    dts: false,
-    clean: options.watch
-      ? false
-      : ['./dist/**/*.js', './dist/**/*.cjs', './dist/**/*.mjs', './dist/**/*.map'],
+    dts: true,
+    clean: true,
     shims: true,
     esbuildPlugins: [fixExtensionsPlugin()],
     onSuccess,

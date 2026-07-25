@@ -1,5 +1,5 @@
-import type { MagmaRequest } from './magma-request';
-import type { MagmaResponse } from './magma-response';
+import type { MagmaRequest } from './magma-request.js';
+import type { MagmaResponse } from './magma-response.js';
 
 export enum HTTPMethodEnum {
   GET = 'GET',

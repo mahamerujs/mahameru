@@ -1,5 +1,5 @@
 import pc from 'picocolors';
-import type { TsErrorReport } from '../server/mahameru-dev-server';
+import type { TsErrorReport } from '../server/mahameru-dev-server.js';
 
 export function formatTypescriptError(errors: TsErrorReport[]) {
   let message = errors

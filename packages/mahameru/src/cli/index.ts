@@ -2,21 +2,21 @@
 
 import { Command } from 'commander';
 import pc from 'picocolors';
-import { parsePort } from '../utils/parse-port';
-import dev from './actions/dev';
-import build from './actions/build';
-import start from './actions/start';
-import stop from './actions/stop';
-import status from './actions/status';
-import generate from './actions/generate';
-import { mahameruDefaultConfig } from '../config';
+import { parsePort } from '../utils/parse-port.js';
+import dev from './actions/dev.js';
+import build from './actions/build.js';
+import start from './actions/start.js';
+import stop from './actions/stop.js';
+import status from './actions/status.js';
+import generate from './actions/generate.js';
+import { mahameruDefaultConfig } from '../config.js';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { MAHAMERU_TITLE } from '../constants';
+import { MAHAMERU_TITLE } from '../constants.js';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import type { PackageJson } from 'type-fest';
-import devTest from './actions/dev-test';
+import devTest from './actions/dev-test.js';
 
 if (process.platform === 'win32') {
   const readline = createInterface({

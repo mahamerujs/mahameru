@@ -1,14 +1,11 @@
 import { join } from 'node:path';
 import pc from 'picocolors';
-import { createLogger, diatremaDefaultConfig } from '@mahameru/diatrema';
+import { diatremaDefaultConfig } from '@mahameru/diatrema';
 import { rm } from 'node:fs/promises';
-import { formatTypescriptError } from '../../utils/format-typescript-error';
-import { printCliBanner } from '../../utils/printCliBanner';
-import { devEnvironmentCheck } from '../../utils/dev-environment-check';
+import { printCliBanner } from '../../utils/printCliBanner.js';
+import { devEnvironmentCheck } from '../../utils/dev-environment-check.js';
 import ora from 'ora';
-import { buildScript } from '../scripts/build';
-
-const logger = createLogger('Mahameru', true);
+import { Mahameru } from '../../mahameru.js';
 
 export default function build({ rootPath, version }: { rootPath: string; version: string }) {
   return async () => {
@@ -25,18 +22,27 @@ export default function build({ rootPath, version }: { rootPath: string; version
       const { productionDir } = diatremaDefaultConfig;
       const productionDirPath = join(rootPath, productionDir);
       await rm(productionDirPath, { recursive: true, force: true });
+      let isShuttingDown = false;
+      const mahameru = new Mahameru({
+        rootPath,
+        dev: true,
+        debug: true,
+      });
 
-      const { errors } = await buildScript({ rootPath, productionDirPath });
+      const shutdown = async (_signal: NodeJS.Signals) => {
+        if (isShuttingDown) return;
 
-      if (errors.length > 0) {
-        await rm(productionDirPath, { recursive: true, force: true });
+        isShuttingDown = true;
 
-        spinner.fail(pc.red('Build failed'));
+        await mahameru.shutdown();
 
-        logger.error(`\n${formatTypescriptError(errors)}`);
+        process.exit(0);
+      };
 
-        process.exit(1);
-      }
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
+
+      await mahameru.build();
 
       spinner.succeed(pc.green('Build completed'));
 

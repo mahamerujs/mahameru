@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 
 import { select, isCancel, cancel, text, outro, intro, spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import { MAGMA_TITLE } from '../constants';
-import { MagmaGenerator } from '..';
+import { MAGMA_TITLE } from '../constants.js';
+import { MagmaGenerator } from '../index.js';
 import { join } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { toKebabCase, toPascalCase, toTitleCase, toCamelCase } from '../helpers';
+import { toKebabCase, toPascalCase, toTitleCase, toCamelCase } from '../helpers.js';
 
 const rootPath = process.env.INIT_CWD || process.cwd();
 const outputTypesDirPath = join(rootPath, '.types', 'magma');

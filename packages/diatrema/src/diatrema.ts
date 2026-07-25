@@ -2,10 +2,10 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { EventEmitter } from './event-emitter';
-import { createLogger, type Logger } from './logger';
+import { EventEmitter } from './event-emitter.js';
+import { createLogger, type Logger } from './logger.js';
 
-import type { Plugin } from './plugin';
+import type { Plugin } from './plugin.ts';
 import { createRequire } from 'node:module';
 
 export type DiatremaEvents = {

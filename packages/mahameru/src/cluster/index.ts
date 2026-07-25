@@ -1,6 +1,6 @@
 import cluster from 'node:cluster';
 import { availableParallelism } from 'node:os';
-import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from '../types';
+import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from '../types/index.js';
 import { join } from 'node:path';
 import { createLogger } from '@mahameru/diatrema';
 

@@ -1,8 +1,8 @@
-import type { MagmaRequest } from './magma-request';
-import { MagmaResponse } from './magma-response';
-import type { Container } from './container';
-import type { HTTPMethod, MagmaContext, RouteItem } from './types';
-import { MagmaErrorResponse } from './magma-error-response';
+import type { MagmaRequest } from './magma-request.js';
+import { MagmaResponse } from './magma-response.js';
+import type { Container } from './container.js';
+import type { HTTPMethod, MagmaContext, RouteItem } from './types.js';
+import { MagmaErrorResponse } from './magma-error-response.js';
 import { createLogger, type Logger } from '@mahameru/diatrema';
 
 type RouteOptions = {

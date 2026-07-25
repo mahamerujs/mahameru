@@ -1,6 +1,10 @@
 import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 
+declare global {
+  var mahameruEnv: Record<string, unknown> | undefined;
+}
+
 export function loadEnvironmentVariables(dev: boolean) {
   const defaultEnvFilePath = join(process.cwd(), '.env');
   const envFilePath = join(process.cwd(), `.env.${dev ? 'development' : 'production'}`);

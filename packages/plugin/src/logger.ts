@@ -14,7 +14,6 @@ export const createLogger = (name: string | string[], debug: boolean = false): L
 
   return {
     info: (...data: unknown[]) => {
-      // eslint-disable-next-line no-console
       console.log(...name, '[Info]', ...data);
     },
     error: (message, error) => {
@@ -24,7 +23,6 @@ export const createLogger = (name: string | string[], debug: boolean = false): L
       console.warn(...name, '[Warn]', ...data);
     },
     debug: (...data: unknown[]) => {
-      // eslint-disable-next-line no-console
       if (debug) console.debug(...name, '[Debug]', ...data);
     },
   };

@@ -2,7 +2,7 @@ import ts from 'typescript';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { exists } from '../helpers';
+import { exists } from '../helpers.js';
 
 export interface RunTypescriptFileOptions {
   /**

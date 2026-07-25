@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { MAHAMERU_TITLE } from '../constants';
+import { MAHAMERU_TITLE } from '../constants.js';
 import pc from 'picocolors';
 import { existsSync } from 'node:fs';
 

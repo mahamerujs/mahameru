@@ -3,9 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import ora from 'ora';
 import pc from 'picocolors';
 
-import { exists } from '../../helpers';
-import { ModuleExits } from '../../errors/module-exists';
-import { toCamelCase, toPascalCase, toTitleCase } from '../../utils/common';
+import { exists } from '../../helpers.js';
+import { ModuleExits } from '../../errors/module-exists.js';
+import { toCamelCase, toPascalCase, toTitleCase } from '../../utils/common.js';
 
 export default async function generateModule(rootPath: string, name: string) {
   const spinner = ora('Generating `' + name + '` module...').start();

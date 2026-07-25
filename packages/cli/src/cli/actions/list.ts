@@ -9,7 +9,6 @@ import net from 'net';
 import ora from 'ora';
 import { Project } from '../../types';
 import { IPC_SOCKET_PATH } from '@/constants';
-import { table } from 'console-table-without-index';
 
 type ProjectListResponse = {
   success: boolean;
@@ -74,7 +73,7 @@ function printManagedProjectsList(projects: Project[]) {
     Status: project.status,
   }));
 
-  console.log(table(data));
+  console.log(console.table(data));
 }
 
 function handleWindowsPermissionDenied(spinner: ReturnType<typeof ora>, rootPath: string) {

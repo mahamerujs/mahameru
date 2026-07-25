@@ -1,5 +1,5 @@
 import type { IncomingMessage, IncomingHttpHeaders } from 'node:http';
-import type { HTTPMethod } from './types';
+import type { HTTPMethod } from './types.js';
 import { extname } from 'node:path';
 import type { TLSSocket } from 'node:tls';
 

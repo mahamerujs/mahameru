@@ -1,0 +1,7 @@
+.mahameru/
+.types/
+dist/
+node_modules/
+!.env
+.mahameru.zip
+mahameru.d.ts

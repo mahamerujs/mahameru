@@ -1,5 +1,5 @@
 import * as MahameruIPC from '../../mahameru/dist/types';
-import type * as Mahameru from '../../mahameru/dist/types/mahameru.d.ts';
+import type * as Mahameru from 'mahameru';
 import type * as MahameruCFG from '../../mahameru/dist/config';
 
 declare global {

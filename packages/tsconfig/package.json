@@ -1,0 +1,7 @@
+{
+  "name": "@mahameru/tsconfig",
+  "version": "0.0.0",
+  "description": "Mahameru tsconfig",
+  "private": true,
+  "main": "base.json"
+}

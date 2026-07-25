@@ -1,7 +1,7 @@
 import prompts from 'prompts';
-import { printCliBanner } from '../../utils/printCliBanner';
-import { clearScreen, toTitleCase } from '../../utils/common';
-import { KNOWN_PLUGINS } from '../../constants';
+import { printCliBanner } from '../../utils/printCliBanner.js';
+import { clearScreen, toTitleCase } from '../../utils/common.js';
+import { KNOWN_PLUGINS } from '../../constants.js';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';

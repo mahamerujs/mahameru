@@ -3,7 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { ModuleError } from './module-error';
+import { ModuleError } from './module-error.js';
 import type {
   ClassConstructor,
   ContainerItem,
@@ -15,7 +15,7 @@ import type {
   ProtectedRoute,
   RouteHandler,
   RouteItem,
-} from './types';
+} from './types.js';
 import { createLogger, type Logger } from '@mahameru/diatrema';
 import { createRequire } from 'node:module';
 

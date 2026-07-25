@@ -1,10 +1,10 @@
-# MahameruJS — Minimal TypeScript HTTP Server
+# MahameruJS — Blank TypeScript
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-11.0+-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-A minimal, lightweight HTTP server example built with TypeScript and MahameruJS.
+A blank test project example built with TypeScript and MahameruJS.
 
 ---
 
@@ -20,7 +20,7 @@ If you're starting a new production project, the fastest way is to scaffold it u
 npm create mahameru@latest
 ```
 
-When prompted, select the **Minimal HTTP Server Typescript** template.
+When prompted, select the **Blank Typescript** template.
 
 ---
 
@@ -65,7 +65,7 @@ iwr https://get.pnpm.io/install.ps1 -useb | iex
 
 4. **Run the test development server:**
    ```bash
-   pnpm dev:test
+   pnpm dev:blank
    ```
 
 ---

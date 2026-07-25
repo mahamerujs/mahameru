@@ -1,6 +1,6 @@
 import { join } from 'node:path';
-import { MahameruDevServer, type TsErrorReport } from '../server/mahameru-dev-server';
-import { devEnvironmentCheck } from '../utils/dev-environment-check';
+import { MahameruDevServer, type TsErrorReport } from '../server/mahameru-dev-server.js';
+import { devEnvironmentCheck } from '../utils/dev-environment-check.js';
 import { rm } from 'node:fs/promises';
 
 export type TypeCheckingWatcherParentProcessMessage = { type: 'START' } | { type: 'SHUTDOWN' };

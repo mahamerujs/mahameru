@@ -1,19 +1,19 @@
 import { join } from 'node:path';
 import { rm } from 'node:fs/promises';
-import { devEnvironmentCheck } from '../../utils/dev-environment-check';
+import { devEnvironmentCheck } from '../../utils/dev-environment-check.js';
 import ora from 'ora';
 import { ChildProcess, spawn } from 'node:child_process';
 // import { fileURLToPath } from "node:url";
 // import { printServerReadyString } from "../../utils/printServerReady";
 // import cli from "../../utils/cli";
-import type { TypescriptServerParentToChildMessage } from '../../workers/typescript-server';
+import type { TypescriptServerParentToChildMessage } from '../../workers/typescript-server.js';
 // import type { DevServerChildProcessMessage, DevServerParentProcessMessage, DevServerStatus } from "../../workers/dev-server";
 // import pc from 'picocolors';
 // import { MAHAMERU_TITLE } from "../../constants";
 import type {
   TypescriptServerEvents,
   TypescriptServerStatus,
-} from '../../server/typescript-server';
+} from '../../server/typescript-server.js';
 import { createLogger } from '@mahameru/diatrema';
 
 // const __dirname = dirname(fileURLToPath(import.meta.url));

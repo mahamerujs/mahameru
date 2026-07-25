@@ -1,5 +1,5 @@
-import { type Diatrema } from './diatrema';
-import { type Logger } from './logger';
+import { type Diatrema } from './diatrema.js';
+import { type Logger } from './logger.js';
 
 export interface BasePluginOptions {
   debug?: boolean;

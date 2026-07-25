@@ -1,7 +1,7 @@
 import { fork } from 'node:child_process';
 import { join, resolve } from 'node:path';
 
-import type { TsErrorReport } from '../../server/mahameru-dev-server';
+import type { TsErrorReport } from '../../server/mahameru-dev-server.js';
 
 export const buildScript = async ({
   rootPath,

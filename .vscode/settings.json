@@ -1,6 +1,9 @@
 {
   "prettier.requireConfig": true,
   "prettier.configPath": ".prettierrc",
+  "eslint.options": {
+    "overrideConfigFile": "eslint.config.mjs"
+  },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {

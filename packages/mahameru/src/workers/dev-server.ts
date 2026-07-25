@@ -1,11 +1,11 @@
 import Diatrema from '@mahameru/diatrema';
-import { devEnvironmentCheck } from '../utils/dev-environment-check';
+import { devEnvironmentCheck } from '../utils/dev-environment-check.js';
 import { join } from 'node:path';
-import { freePortFinder } from '../utils/free-port-finder';
-import { runTypescriptFile } from '../utils/run-typescript-file';
-import { mahameruDefaultConfig, type MahameruConfigResult } from '../config';
-import { loadEnvironmentVariables } from '../utils/load-env';
-import type { FileChangedEventType } from './type-checking-watcher';
+import { freePortFinder } from '../utils/free-port-finder.js';
+import { runTypescriptFile } from '../utils/run-typescript-file.js';
+import { mahameruDefaultConfig, type MahameruConfigResult } from '../config.js';
+import { loadEnvironmentVariables } from '../utils/load-env.js';
+import type { FileChangedEventType } from './type-checking-watcher.js';
 
 export type DevServerParentProcessMessage =
   | { type: 'START' }
