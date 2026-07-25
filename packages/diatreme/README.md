@@ -1,4 +1,4 @@
-# @mahameru/diatrema
+# @mahameru/diatreme
 
 ## Deprecated
 

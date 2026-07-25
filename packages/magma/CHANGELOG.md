@@ -42,4 +42,4 @@
 
 - Bug fixes and improvements
 - Updated dependencies
-  - @mahameru/diatrema@0.0.8
+  - @mahameru/diatreme@0.0.8

@@ -1,5 +1,5 @@
 {
-  "name": "@mahameru/diatrema",
+  "name": "@mahameru/diatreme",
   "version": "0.0.9",
   "description": "The core engine of MahameruJS. Just like a volcanic diatreme, it serves as the essential conduit that powers and drives the entire framework ecosystem.",
   "main": "./dist/index.cjs",
@@ -26,7 +26,7 @@
     "mahameru",
     "mahamerujs",
     "core",
-    "diatrema",
+    "diatreme",
     "core-engine"
   ],
   "author": "Bintan <hello@bintvn.co>",

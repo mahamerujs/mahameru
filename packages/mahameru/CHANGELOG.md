@@ -5,7 +5,7 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @mahameru/diatrema@0.0.9
+  - @mahameru/diatreme@0.0.9
 
 ## 0.0.43
 
@@ -19,4 +19,4 @@
 
 - Bug fixes and improvements
 - Updated dependencies
-  - @mahameru/diatrema@0.0.8
+  - @mahameru/diatreme@0.0.8

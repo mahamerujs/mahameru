@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import pc from 'picocolors';
-import { diatremaDefaultConfig } from '@mahameru/diatrema';
+import { diatremeDefaultConfig } from '@mahameru/diatreme';
 import { rm } from 'node:fs/promises';
 import { printCliBanner } from '../../utils/printCliBanner.js';
 import { devEnvironmentCheck } from '../../utils/dev-environment-check.js';
@@ -19,7 +19,7 @@ export default function build({ rootPath, version }: { rootPath: string; version
     try {
       devEnvironmentCheck(rootPath);
 
-      const { productionDir } = diatremaDefaultConfig;
+      const { productionDir } = diatremeDefaultConfig;
       const productionDirPath = join(rootPath, productionDir);
       await rm(productionDirPath, { recursive: true, force: true });
       let isShuttingDown = false;

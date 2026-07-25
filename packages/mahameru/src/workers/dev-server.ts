@@ -1,4 +1,4 @@
-import Diatrema from '@mahameru/diatrema';
+import Diatreme from '@mahameru/diatreme';
 import { devEnvironmentCheck } from '../utils/dev-environment-check.js';
 import { join } from 'node:path';
 import { freePortFinder } from '../utils/free-port-finder.js';
@@ -59,9 +59,9 @@ const start = async (rootPath: string, host: string, port: number) => {
 
   mahameruConfig.merged.port = await freePortFinder(mahameruConfig.merged.port);
 
-  sendMessage({ type: 'MESSAGE', data: 'Initializing Diatrema...' });
+  sendMessage({ type: 'MESSAGE', data: 'Initializing Diatreme...' });
 
-  const app = new Diatrema({
+  const app = new Diatreme({
     rootPath,
     dev: true,
   });
@@ -99,7 +99,7 @@ const start = async (rootPath: string, host: string, port: number) => {
 
     devEnvironmentCheck(rootPath);
 
-    let app: Diatrema;
+    let app: Diatreme;
 
     const shutdown = () => {
       return;

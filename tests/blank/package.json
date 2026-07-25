@@ -17,7 +17,7 @@
     "typescript": "^6.0.3"
   },
   "allowScripts": {
-    "@mahameru/diatrema": true,
+    "@mahameru/diatreme": true,
     "mahameru": true
   }
 }

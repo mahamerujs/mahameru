@@ -1,4 +1,4 @@
-# @mahameru/diatrema
+# @mahameru/diatreme
 
 ## 0.0.9
 

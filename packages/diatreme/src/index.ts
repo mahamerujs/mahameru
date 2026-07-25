@@ -1,3 +1,5 @@
+export * from './event-emitter.js';
+
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -8,11 +10,11 @@ import { createLogger, type Logger } from './logger.js';
 import type { Plugin } from '@mahameru/plugin';
 import { createRequire } from 'node:module';
 
-export type DiatremaEvents = {
+export type DiatremeEvents = {
   ready: [data: { mode: 'development' | 'production'; port?: number; host?: string }];
 };
 
-export type DiatremaOptions = {
+export type DiatremeOptions = {
   dev: boolean;
   debug: boolean;
   rootPath: string;
@@ -25,7 +27,7 @@ export type DiatremaOptions = {
 
 const requireModule = createRequire(import.meta.url);
 
-export const diatremaDefaultConfig: DiatremaOptions = {
+export const diatremeDefaultConfig: DiatremeOptions = {
   dev: false,
   debug: false,
   rootPath: process.cwd(),
@@ -38,20 +40,20 @@ export const diatremaDefaultConfig: DiatremaOptions = {
 };
 
 /**
- * Main Diatrema class that orchestrates the application lifecycle.
+ * Main Diatreme class that orchestrates the application lifecycle.
  */
-export class Diatrema extends EventEmitter<DiatremaEvents> {
+export class Diatreme extends EventEmitter<DiatremeEvents> {
   protected _initialized = false;
   protected _isShuttingDown = false;
   protected _plugins = new Map<string, Plugin>();
   protected logger: Logger;
-  public readonly options: DiatremaOptions;
+  public readonly options: DiatremeOptions;
 
-  constructor(options?: Partial<DiatremaOptions>) {
+  constructor(options?: Partial<DiatremeOptions>) {
     super();
 
-    this.options = { ...diatremaDefaultConfig, ...options };
-    this.logger = createLogger('Diatrema', this.options.debug);
+    this.options = { ...diatremeDefaultConfig, ...options };
+    this.logger = createLogger('Diatreme', this.options.debug);
   }
 
   /**
@@ -153,3 +155,5 @@ export class Diatrema extends EventEmitter<DiatremaEvents> {
     return module[defaultExportName];
   }
 }
+
+export default Diatreme;

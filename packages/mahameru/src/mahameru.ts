@@ -1,9 +1,9 @@
 import {
-  Diatrema,
-  type DiatremaOptions,
-  diatremaDefaultConfig,
+  Diatreme,
+  type DiatremeOptions,
+  diatremeDefaultConfig,
   EventEmitter,
-} from '@mahameru/diatrema';
+} from '@mahameru/diatreme';
 import { Plugin, type BasePluginOptions } from '@mahameru/plugin';
 import { join, resolve } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -16,7 +16,7 @@ import type { TypescriptServerParentToChildMessage } from './workers/typescript-
 import { createLogger, type Logger } from './logger.js';
 
 export type MahameruMode = 'development' | 'production';
-export type MahameruOptions = DiatremaOptions & {
+export type MahameruOptions = DiatremeOptions & {
   outputTypesDirPath: string;
   sourceDirPath: string;
 };
@@ -37,10 +37,10 @@ declare global {
 }
 
 const mahameruDefaultOptions: MahameruOptions = {
-  ...diatremaDefaultConfig,
+  ...diatremeDefaultConfig,
   dev: process.env.NODE_ENV === 'development',
-  outputTypesDirPath: join(diatremaDefaultConfig.rootPath, '.types'),
-  sourceDirPath: join(diatremaDefaultConfig.rootPath, 'src'),
+  outputTypesDirPath: join(diatremeDefaultConfig.rootPath, '.types'),
+  sourceDirPath: join(diatremeDefaultConfig.rootPath, 'src'),
 };
 
 export type MahameruEvents = {
@@ -48,7 +48,7 @@ export type MahameruEvents = {
 };
 
 export class Mahameru extends EventEmitter<MahameruEvents> {
-  protected readonly diatrema: Diatrema;
+  protected readonly diatreme: Diatreme;
   protected _options: MahameruOptions;
   protected spinner?: Ora;
   protected logger: Logger;
@@ -58,7 +58,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
     this._options = { ...mahameruDefaultOptions, ...options };
     this.logger = createLogger('Mahameru', this._options.debug);
     this.spinner = this._options.debug ? undefined : spinner;
-    this.diatrema = new Diatrema(this._options);
+    this.diatreme = new Diatreme(this._options);
   }
 
   get options(): MahameruOptions {
@@ -86,7 +86,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
   public async shutdown() {
     this.logger.debug('Shutting down...');
     await this.typescriptServer.stop();
-    await this.diatrema.shutdown();
+    await this.diatreme.shutdown();
     this.logger.debug('Shutting down... Done');
   }
 
@@ -95,7 +95,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
 
     await this.discoverPlugins();
 
-    this.logger.debug('Starting Diatrema... Done');
+    this.logger.debug('Starting Diatreme... Done');
   }
 
   protected async startDevServer() {
@@ -107,7 +107,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
     await this.generator().appendMahameruDTSToTsConfig();
     await this.typescriptServer.spawn();
     await this.typescriptServer.start();
-    await this.diatrema.initialize();
+    await this.diatreme.initialize();
 
     this.logger.debug('Starting development server... Done');
   }
@@ -153,7 +153,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
           } else if (message['file-changed']) {
             const [filePath, eventType, _itemType] = message['file-changed'];
             if (eventType === 'update') {
-              await this.diatrema.devHRM(filePath);
+              await this.diatreme.devHRM(filePath);
             }
           }
         };
@@ -501,7 +501,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
       };
 
       const potentialPluginNames = Object.keys(allDependencies).filter(
-        (dep) => dep.startsWith('@mahameru/') && dep !== '@mahameru/diatrema',
+        (dep) => dep.startsWith('@mahameru/') && dep !== '@mahameru/diatreme',
       );
 
       this.logger.debug(
@@ -555,7 +555,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
             await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
           }
 
-          this.diatrema.setPlugin(shortPluginName, pluginInstance);
+          this.diatreme.setPlugin(shortPluginName, pluginInstance);
 
           this.logger.debug(`Loaded plugin ${name} from ${pluginDirPath}`);
         } catch (err) {
