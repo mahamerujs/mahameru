@@ -8,7 +8,6 @@ import build from './actions/build.js';
 import start from './actions/start.js';
 import stop from './actions/stop.js';
 import status from './actions/status.js';
-import generate from './actions/generate.js';
 import { mahameruDefaultConfig } from '../config.js';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -98,11 +97,6 @@ if (process.platform === 'win32') {
       .command('status')
       .description('View MahameruJS production server status.')
       .action(status({ rootPath, version }));
-
-    mahameru
-      .command('generate')
-      .description('MahameruJS project generator.')
-      .action(generate({ rootPath, version }));
 
     await mahameru.parseAsync(process.argv);
   } catch (error) {
