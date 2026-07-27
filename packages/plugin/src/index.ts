@@ -1,7 +1,8 @@
+import { Container } from './container.js';
 import { Generator } from './generator.js';
 import { type Logger } from './logger.js';
 
-export { Generator };
+export { Generator, Container };
 export { type Logger, createLogger } from './logger.js';
 
 export interface BasePluginOptions {
@@ -16,6 +17,7 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
   protected _options: O;
   protected _initialized = false;
   protected _isShuttingDown = false;
+  protected _container?: Container;
   protected _generator?: Generator;
   protected _plugins: Map<string, Plugin> = new Map();
 

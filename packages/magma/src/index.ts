@@ -133,7 +133,6 @@ export default class Magma extends Plugin<MagmaOptions> {
       debug: this._options.debug,
       appDirPath,
       dev: this._options.dev,
-      moduleType: 'esm',
       modulesDirPath: join(appDirPath, 'modules'),
       routesDirPath: join(appDirPath, 'routes'),
     });

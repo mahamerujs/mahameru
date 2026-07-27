@@ -1,7 +1,6 @@
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 
 import { ModuleError } from './module-error.js';
 import type {
@@ -16,8 +15,7 @@ import type {
   RouteHandler,
   RouteItem,
 } from './types.js';
-import { createLogger, type Logger } from '@mahameru/plugin';
-import { createRequire } from 'node:module';
+import { createLogger, type Logger, Container as PluginContainer } from '@mahameru/plugin';
 
 /**
  * Container options
@@ -28,17 +26,15 @@ export type ContainerOptions = {
   routesDirPath: string;
   modulesDirPath: string;
   appDirPath: string;
-  moduleType: 'commonjs' | 'esm';
 };
 
-const requireModule = createRequire(import.meta.url);
-
-export class Container {
+export class Container extends PluginContainer<ContainerOptions> {
   protected _initialized = false;
   protected _registry: ContainerRegistry = new Map();
   protected logger: Logger;
 
   constructor(public readonly options: ContainerOptions) {
+    super(options);
     this.logger = createLogger(['Magma', 'Container'], this.options.debug);
   }
 
@@ -217,10 +213,7 @@ export class Container {
     const regexPattern = escaped.replace(/\\\[([^\\\]]+)\\\]/g, '([^/]+)');
     const regex = new RegExp(`^${regexPattern}$`);
     const pathFS = resolve(fullPath);
-    const routeHandlers = await this.require<Record<HTTPMethod, RouteHandler>>(
-      this.options.moduleType,
-      fullPath,
-    );
+    const routeHandlers = await this.require<Record<HTTPMethod, RouteHandler>>(fullPath);
 
     if (routeHandlers) {
       this._registry.set(fullPath, {
@@ -262,10 +255,7 @@ export class Container {
 
       if (!existsSync(controllerPath)) continue;
 
-      const controllerModule = await this.require<Record<string, ClassConstructor>>(
-        this.options.moduleType,
-        controllerPath,
-      );
+      const controllerModule = await this.require<Record<string, ClassConstructor>>(controllerPath);
 
       if (controllerModule) {
         const module = this.getDefaultExport<ClassConstructor>(controllerModule, controllerPath);
@@ -289,10 +279,7 @@ export class Container {
 
       if (!existsSync(servicePath)) continue;
 
-      const serviceModule = await this.require<Record<string, ClassConstructor>>(
-        this.options.moduleType,
-        servicePath,
-      );
+      const serviceModule = await this.require<Record<string, ClassConstructor>>(servicePath);
 
       if (serviceModule) {
         const module = this.getDefaultExport<ClassConstructor>(serviceModule, servicePath);
@@ -315,10 +302,7 @@ export class Container {
   }
 
   protected async loadModuleItem(filePath: string, type: ContainerItem['type']) {
-    const unknownModule = await this.require<Record<string, ClassConstructor>>(
-      this.options.moduleType,
-      filePath,
-    );
+    const unknownModule = await this.require<Record<string, ClassConstructor>>(filePath);
 
     if (!unknownModule) return;
 
@@ -359,9 +343,10 @@ export class Container {
 
   protected async loadMiddlewareHandler(): Promise<boolean> {
     const middlawareHandlerPath = join(this.options.appDirPath, 'middleware.js');
-    const result = await this.require<
-      Record<'default' | 'protectedRoutes', MagmaMiddleware | ProtectedRoute>
-    >(this.options.moduleType, middlawareHandlerPath);
+    const result =
+      await this.require<Record<'default' | 'protectedRoutes', MagmaMiddleware | ProtectedRoute>>(
+        middlawareHandlerPath,
+      );
     let success = false;
 
     if (result?.default && !Array.isArray(result.default)) {
@@ -404,10 +389,8 @@ export class Container {
       'TRACE',
     ];
     const notFoundHandlerPath = join(this.options.appDirPath, 'routes', 'not-found.js');
-    const result = await this.require<Partial<Record<HTTPMethod, RouteHandler>>>(
-      this.options.moduleType,
-      notFoundHandlerPath,
-    );
+    const result =
+      await this.require<Partial<Record<HTTPMethod, RouteHandler>>>(notFoundHandlerPath);
 
     if (result && Object.keys(result).length > 0) {
       const filteredHandlers: Partial<Record<HTTPMethod, RouteHandler>> = {};
@@ -430,10 +413,7 @@ export class Container {
 
   protected async loadErrorHandler() {
     const errorHandlerPath = join(this.options.appDirPath, 'error.js');
-    const result = await this.require<Record<'default', ErrorHandler>>(
-      this.options.moduleType,
-      errorHandlerPath,
-    );
+    const result = await this.require<Record<'default', ErrorHandler>>(errorHandlerPath);
 
     if (result) {
       const item = this.getDefaultExport<ErrorHandler>(result, errorHandlerPath);
@@ -458,28 +438,5 @@ export class Container {
       });
 
     return module[defaultExportName];
-  }
-
-  protected async require<T extends Record<string, unknown> = Record<string, unknown>>(
-    type: 'commonjs' | 'esm',
-    resolvedFilePath: string,
-  ): Promise<T | undefined> {
-    const noCache = this.options.dev;
-
-    if (!existsSync(resolvedFilePath)) return;
-
-    if (type === 'commonjs') {
-      if (noCache) {
-        delete requireModule.cache[resolvedFilePath];
-      }
-
-      return requireModule(resolvedFilePath) as T;
-    }
-
-    let fileUrl = pathToFileURL(resolvedFilePath).href;
-
-    if (noCache) fileUrl += `?update=${Date.now()}`;
-
-    return (await import(fileUrl)) as T;
   }
 }
