@@ -2,6 +2,7 @@
   "name": "http-test",
   "description": "",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "mahameru dev:test",
