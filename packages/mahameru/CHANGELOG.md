@@ -1,5 +1,11 @@
 # mahameru
 
+## 0.0.50
+
+### Patch Changes
+
+- Fix bug loading plugin
+
 ## 0.0.49
 
 ### Patch Changes
