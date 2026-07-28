@@ -1,5 +1,12 @@
 # @mahameru/magma
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @mahameru/plugin@0.0.2
+
 ## 0.0.13
 
 ### Patch Changes
