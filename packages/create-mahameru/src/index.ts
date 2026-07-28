@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 
 import { Command } from 'commander';
 import { version } from '../package.json';
@@ -244,6 +243,10 @@ async function onInit() {
   }
 
   await cp(selectedTemplate.dir, targetDir, { recursive: true });
+
+  if (existsSync(join(targetDir, 'README.md'))) {
+    await rm(join(targetDir, 'README.md'));
+  }
 
   const packageJson = { ...selectedTemplate.packageJson };
 
