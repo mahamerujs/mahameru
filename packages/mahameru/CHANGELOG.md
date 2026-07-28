@@ -1,5 +1,11 @@
 # mahameru
 
+## 0.0.51
+
+### Patch Changes
+
+- Fix loading module
+
 ## 0.0.50
 
 ### Patch Changes
