@@ -14,7 +14,7 @@ import type {
   TypescriptServerEvents,
   TypescriptServerStatus,
 } from '../../server/typescript-server.js';
-import { createLogger } from '../../logger.js';
+import { createLogger } from '@mahameru/tephra';
 
 // const __dirname = dirname(fileURLToPath(import.meta.url));
 // let appState: { port: number; host: string; mode: 'development' | 'production' } | null = null;

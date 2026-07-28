@@ -1,36 +1,26 @@
 import { Container } from './container.js';
 import { Generator } from './generator.js';
-import { type Logger } from './logger.js';
+import { BaseClass } from '@mahameru/tephra';
 
 export { Generator, Container };
-export { type Logger, createLogger } from './logger.js';
 
 export interface BasePluginOptions {
-  debug?: boolean;
-  dev?: boolean;
+  debug: boolean;
+  dev: boolean;
 }
 
-export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
-  public abstract readonly name: string;
+export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> extends BaseClass<O> {
   public abstract readonly slugName: string;
-  protected logger?: Logger;
-  protected _options: O;
-  protected _initialized = false;
-  protected _isShuttingDown = false;
   protected _container?: Container;
   protected _generator?: Generator;
   protected _plugins: Map<string, Plugin> = new Map();
 
-  constructor(options: Partial<O>) {
-    this._options = options as O;
+  constructor(name: string, options: O) {
+    super(name, options);
   }
 
   get initialized() {
     return this._initialized;
-  }
-
-  get options(): O {
-    return this._options;
   }
 
   get generator() {
@@ -42,17 +32,17 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
   }
 
   public async initialize(): Promise<void> {
-    this.logger?.debug('Initializing...');
+    this.logger.debug('Initializing...');
 
     if (this._initialized) {
-      this.logger?.debug('Already initialized');
+      this.logger.debug('Already initialized');
 
       return;
     }
 
     await this.boot();
 
-    this.logger?.debug('Initializing... Done');
+    this.logger.debug('Initializing... Done');
 
     this._initialized = true;
   }
@@ -60,7 +50,7 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
   public async destroy(): Promise<void> {
     if (!this._initialized || this._isShuttingDown) return;
 
-    this.logger?.debug('Destroying...');
+    this.logger.debug('Destroying...');
 
     this._isShuttingDown = true;
 
@@ -69,7 +59,7 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> {
     this._initialized = false;
     this._isShuttingDown = false;
 
-    this.logger?.debug('Destroying... Done');
+    this.logger.debug('Destroying... Done');
   }
 
   public async onDevHRM(changedFile: string): Promise<void | undefined> {

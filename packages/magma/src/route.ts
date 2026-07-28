@@ -3,9 +3,10 @@ import { MagmaResponse } from './magma-response.js';
 import type { Container } from './container.js';
 import type { HTTPMethod, MagmaContext, RouteItem } from './types.js';
 import { MagmaErrorResponse } from './magma-error-response.js';
-import { createLogger, type Logger } from '@mahameru/plugin';
+import { BaseClass } from '../../tephra/dist/base-class.js';
 
 type RouteOptions = {
+  dev: boolean;
   debug: boolean;
 };
 
@@ -13,15 +14,12 @@ export type RouteDependencies = {
   container: Container;
 };
 
-export class Route {
+export class Route extends BaseClass<RouteOptions> {
   public readonly dependencies: RouteDependencies;
-  public logger: Logger;
-  public readonly options: RouteOptions;
 
   constructor(options: RouteOptions, dependencies: RouteDependencies) {
-    this.options = options;
+    super('MagmaRoute', options);
     this.dependencies = dependencies;
-    this.logger = createLogger(['Magma', 'Container'], this.options.debug);
   }
 
   normalizePathForMatching(path: string): string {

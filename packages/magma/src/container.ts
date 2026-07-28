@@ -15,7 +15,7 @@ import type {
   RouteHandler,
   RouteItem,
 } from './types.js';
-import { createLogger, type Logger, Container as PluginContainer } from '@mahameru/plugin';
+import { Container as PluginContainer } from '@mahameru/plugin';
 
 /**
  * Container options
@@ -31,11 +31,9 @@ export type ContainerOptions = {
 export class Container extends PluginContainer<ContainerOptions> {
   protected _initialized = false;
   protected _registry: ContainerRegistry = new Map();
-  protected logger: Logger;
 
   constructor(public readonly options: ContainerOptions) {
-    super(options);
-    this.logger = createLogger(['Magma', 'Container'], this.options.debug);
+    super('MagmaContainer', options);
   }
 
   get notFoundHandler() {

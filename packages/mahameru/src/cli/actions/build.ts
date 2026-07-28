@@ -1,11 +1,10 @@
 import { join } from 'node:path';
 import pc from 'picocolors';
-import { diatremeDefaultConfig } from '@mahameru/diatreme';
 import { rm } from 'node:fs/promises';
 import { printCliBanner } from '../../utils/printCliBanner.js';
 import { devEnvironmentCheck } from '../../utils/dev-environment-check.js';
 import ora from 'ora';
-import { Mahameru } from '../../mahameru.js';
+import { Mahameru, mahameruDefaultOptions } from '../../mahameru.js';
 
 export default function build({ rootPath, version }: { rootPath: string; version: string }) {
   return async () => {
@@ -19,7 +18,7 @@ export default function build({ rootPath, version }: { rootPath: string; version
     try {
       devEnvironmentCheck(rootPath);
 
-      const { productionDir } = diatremeDefaultConfig;
+      const { productionDir } = mahameruDefaultOptions;
       const productionDirPath = join(rootPath, productionDir);
       await rm(productionDirPath, { recursive: true, force: true });
       let isShuttingDown = false;

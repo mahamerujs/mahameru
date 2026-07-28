@@ -3,7 +3,7 @@ import { existsSync, globSync } from 'node:fs';
 import { basename, dirname, extname, join, relative } from 'node:path';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
-import { createLogger, Plugin, Generator, type Logger } from '@mahameru/plugin';
+import { Plugin, Generator } from '@mahameru/plugin';
 
 import { MagmaResponse } from './magma-response.js';
 import { MagmaRequest } from './magma-request.js';
@@ -99,7 +99,7 @@ export type MagmaOptions = {
   trailingSlash: boolean;
 };
 
-const defaultOptions: MagmaOptions = {
+const defaultMagmaOptions: MagmaOptions = {
   host: '127.0.0.1',
   port: 3000,
   debug: false,
@@ -113,38 +113,34 @@ const defaultOptions: MagmaOptions = {
 };
 
 export default class Magma extends Plugin<MagmaOptions> {
-  public readonly name: string = 'Magma';
   public readonly slugName: string = 'magma';
   protected httpServer: HTTPServerInstance;
   protected container: Container;
   protected route: Route;
-  protected _favicon?: Buffer<ArrayBuffer>;
+  protected favicon?: Buffer<ArrayBuffer>;
   protected request: Map<number, number> = new Map();
-  protected logger: Logger;
 
-  constructor(options: Partial<MagmaOptions>) {
-    super({ ...defaultOptions, ...options });
-
-    this.logger = createLogger('Magma', this._options.debug);
+  constructor(options?: Partial<MagmaOptions>) {
+    super('Magma', { ...defaultMagmaOptions, ...options });
 
     const appDirPath = join(process.cwd(), '.mahameru');
-
     this.container = new Container({
-      debug: this._options.debug,
+      debug: this.options.debug,
       appDirPath,
-      dev: this._options.dev,
+      dev: this.options.dev,
       modulesDirPath: join(appDirPath, 'modules'),
       routesDirPath: join(appDirPath, 'routes'),
     });
     this.route = new Route(
       {
-        debug: this._options.debug,
+        dev: this.options.dev,
+        debug: this.options.debug,
       },
       {
         container: this.container,
       },
     );
-    this._generator = new MagmaGenerator({ debug: this._options.debug });
+    this._generator = new MagmaGenerator({ debug: this.options.debug, dev: this.options.dev });
     this.loadFavicon();
     this.httpServer = this.create();
     this.httpServer.on('error', (error: unknown) => {
@@ -176,10 +172,10 @@ export default class Magma extends Plugin<MagmaOptions> {
         return;
       }
 
-      this.httpServer.listen(this._options.port, this._options.host, () => {
+      this.httpServer.listen(this.options.port, this.options.host, () => {
         this._initialized = true;
 
-        this.logger.debug('Listening on', `http://${this._options.host}:${this._options.port}`);
+        this.logger.debug('Listening on', `http://${this.options.host}:${this.options.port}`);
 
         resolve();
       });
@@ -215,7 +211,7 @@ export default class Magma extends Plugin<MagmaOptions> {
       async (request, response) => await this.handleRequest(request, response),
     );
 
-    httpServer.keepAliveTimeout = this._options.keepAliveTimeout;
+    httpServer.keepAliveTimeout = this.options.keepAliveTimeout;
     httpServer.headersTimeout = httpServer.keepAliveTimeout + 1000;
 
     return httpServer;
@@ -234,8 +230,8 @@ export default class Magma extends Plugin<MagmaOptions> {
     try {
       if (this._isShuttingDown) response.setHeader('Connection', 'close');
 
-      if (typeof this._options.allowedIps !== 'undefined' && magmaRequest.ipAddress) {
-        if (!this._options.allowedIps.includes(magmaRequest.ipAddress))
+      if (typeof this.options.allowedIps !== 'undefined' && magmaRequest.ipAddress) {
+        if (!this.options.allowedIps.includes(magmaRequest.ipAddress))
           return this.sendResponse(
             response,
             new MagmaResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 }),
@@ -243,10 +239,10 @@ export default class Magma extends Plugin<MagmaOptions> {
       }
 
       if (
-        typeof this._options.allowedHosts !== 'undefined' &&
-        Array.isArray(this._options.allowedHosts)
+        typeof this.options.allowedHosts !== 'undefined' &&
+        Array.isArray(this.options.allowedHosts)
       )
-        if (!this._options.allowedHosts.includes(magmaRequest.headers.host as string))
+        if (!this.options.allowedHosts.includes(magmaRequest.headers.host as string))
           return this.sendResponse(
             response,
             new MagmaResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 }),
@@ -254,15 +250,15 @@ export default class Magma extends Plugin<MagmaOptions> {
 
       if (
         magmaRequest.headers.origin &&
-        this._options.allowedOrigins &&
-        !this._options.allowedOrigins.includes(magmaRequest.headers.origin)
+        this.options.allowedOrigins &&
+        !this.options.allowedOrigins.includes(magmaRequest.headers.origin)
       )
         return this.sendResponse(
           response,
           new MagmaResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 }),
         );
 
-      if (magmaRequest.method === 'OPTIONS' && this._options.allowedOrigins) {
+      if (magmaRequest.method === 'OPTIONS' && this.options.allowedOrigins) {
         this.handleCorsPreflight(request, response);
 
         return;
@@ -270,11 +266,7 @@ export default class Magma extends Plugin<MagmaOptions> {
 
       this.applyCorsHeaders(request, response);
 
-      if (
-        this._options.trailingSlash === false &&
-        rawReqUrl.length > 1 &&
-        rawReqUrl.endsWith('/')
-      ) {
+      if (this.options.trailingSlash === false && rawReqUrl.length > 1 && rawReqUrl.endsWith('/')) {
         const safeUrl = rawReqUrl.slice(0, -1);
 
         this.sendResponse(
@@ -290,7 +282,7 @@ export default class Magma extends Plugin<MagmaOptions> {
 
         return;
       } else if (
-        this._options.trailingSlash === true &&
+        this.options.trailingSlash === true &&
         !rawReqUrl.endsWith('/') &&
         !rawReqUrl.includes('.')
       ) {
@@ -423,11 +415,11 @@ export default class Magma extends Plugin<MagmaOptions> {
 
     if (!targetFaviconPath) return;
 
-    this._favicon = await readFile(targetFaviconPath);
+    this.favicon = await readFile(targetFaviconPath);
   }
 
   protected async handleFaviconRequest(request: MagmaRequest, response: DefaultHTTPResponse) {
-    if (!this._favicon) {
+    if (!this.favicon) {
       return this.sendResponse(
         response,
         new MagmaResponse('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } }),
@@ -448,7 +440,7 @@ export default class Magma extends Plugin<MagmaOptions> {
     if (middlewareHandler) {
       const middlewareResponse = await middlewareHandler(
         context,
-        async () => new MagmaResponse(this._favicon, { status: 200 }),
+        async () => new MagmaResponse(this.favicon, { status: 200 }),
       );
       const normalized = this.normalizeMagmaResponse(middlewareResponse, 'Middleware error');
       const headers = new Headers(normalized.headers);
@@ -470,7 +462,7 @@ export default class Magma extends Plugin<MagmaOptions> {
       );
     }
 
-    const faviconResponse = new MagmaResponse(this._favicon, {
+    const faviconResponse = new MagmaResponse(this.favicon, {
       status: 200,
       headers: {
         'Content-Type': 'image/x-icon',
@@ -484,7 +476,7 @@ export default class Magma extends Plugin<MagmaOptions> {
   protected applyCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     const origin = req.headers.origin;
 
-    if (origin && this._options.allowedOrigins?.includes(origin)) {
+    if (origin && this.options.allowedOrigins?.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
     }
@@ -519,7 +511,7 @@ export default class Magma extends Plugin<MagmaOptions> {
       response.setHeader(key, value);
     });
 
-    if (!this._options.disableHttpSignature) {
+    if (!this.options.disableHttpSignature) {
       response.setHeader('X-Powered-By', 'MahameruJS');
       response.setHeader('X-Message', 'Indonesia Bisa!');
     }
@@ -653,7 +645,7 @@ export default class Magma extends Plugin<MagmaOptions> {
   }
 
   protected requestLogger(response: DefaultHTTPResponse) {
-    if (!this._options.debug && this._options.dev!) return;
+    if (!this.options.debug && this.options.dev!) return;
 
     if (response.id) {
       const startTime = this.request.get(response.id);
@@ -677,8 +669,8 @@ export default class Magma extends Plugin<MagmaOptions> {
 }
 
 type MagmaGeneratorOptions = {
-  debug?: boolean;
-  dev?: boolean;
+  debug: boolean;
+  dev: boolean;
 };
 
 const magmaGeneratorDefaultOptions: MagmaGeneratorOptions = {
@@ -690,8 +682,7 @@ export class MagmaGenerator extends Generator<MagmaGeneratorOptions> {
   protected rootPath = process.env.INIT_CWD || process.cwd();
 
   constructor(options?: Partial<MagmaGeneratorOptions>) {
-    super(options ?? magmaGeneratorDefaultOptions);
-    this.logger = createLogger(['Magma', 'MagmaGenerator'], this._options.debug);
+    super('MagmaGenerator', { ...magmaGeneratorDefaultOptions, ...options });
   }
 
   public async routeIndexFile(routesIndexFilePath: string) {

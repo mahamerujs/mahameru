@@ -2,7 +2,7 @@ import { dirname, join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { Project, ScriptTarget, ModuleKind, ts } from 'ts-morph';
-import { createLogger, type Logger } from '../logger.js';
+import { createLogger, type Logger } from '@mahameru/tephra';
 
 type GeneratorOptions = {
   dev: boolean;

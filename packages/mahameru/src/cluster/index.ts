@@ -2,7 +2,7 @@ import cluster from 'node:cluster';
 import { availableParallelism } from 'node:os';
 import type { MahameruIPCMessageChild, MahameruIPCMessageServer } from '../types/index.js';
 import { join } from 'node:path';
-import { createLogger } from '../logger.js';
+import { createLogger } from '@mahameru/tephra';
 
 let isShuttingDown = false;
 let isAppReady = false;

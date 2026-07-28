@@ -61,6 +61,7 @@
   "devDependencies": {
     "@mahameru/diatreme": "workspace:*",
     "@mahameru/plugin": "workspace:*",
+    "@mahameru/tephra": "workspace:*",
     "@mahameru/tsconfig": "workspace:*",
     "@types/node": "^26.0.1",
     "@types/prompts": "^2.4.9",

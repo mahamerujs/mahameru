@@ -62,8 +62,8 @@ const start = async (rootPath: string, host: string, port: number) => {
   sendMessage({ type: 'MESSAGE', data: 'Initializing Diatreme...' });
 
   const app = new Diatreme({
-    rootPath,
     dev: true,
+    debug: true,
   });
 
   app.on('ready', ({ port, host, mode }) => {

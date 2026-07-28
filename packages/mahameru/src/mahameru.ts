@@ -1,24 +1,24 @@
-import {
-  Diatreme,
-  type DiatremeOptions,
-  diatremeDefaultConfig,
-  EventEmitter,
-} from '@mahameru/diatreme';
+import { Diatreme } from '@mahameru/diatreme';
 import { Plugin, type BasePluginOptions } from '@mahameru/plugin';
 import { join, resolve } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 import type { TypescriptServerEvents, TypescriptServerStatus } from './server/typescript-server.ts';
 import type { Ora } from 'ora';
 import type { TypescriptServerParentToChildMessage } from './workers/typescript-server.ts';
-import { createLogger, type Logger } from './logger.js';
+import { type Logger } from '@mahameru/tephra';
+import { EventBaseClass } from '@mahameru/tephra';
 
 export type MahameruMode = 'development' | 'production';
-export type MahameruOptions = DiatremeOptions & {
+export type MahameruOptions = {
+  rootPath: string;
+  dev: boolean;
+  debug: boolean;
   outputTypesDirPath: string;
   sourceDirPath: string;
+  productionDir: string;
+  developmentDir: string;
 };
 
 type MahameruGeneratorOptions = {
@@ -27,48 +27,41 @@ type MahameruGeneratorOptions = {
   outputTypesDirPath: string;
 };
 
-interface CustomNodeRequire {
-  cache: Record<string, unknown>;
-  resolve(id: string): string;
-}
-
 declare global {
   var mahameruEnv: Record<string, unknown> | undefined;
 }
 
-const mahameruDefaultOptions: MahameruOptions = {
-  ...diatremeDefaultConfig,
+export const mahameruDefaultOptions: MahameruOptions = {
+  rootPath: process.cwd(),
   dev: process.env.NODE_ENV === 'development',
-  outputTypesDirPath: join(diatremeDefaultConfig.rootPath, '.types'),
-  sourceDirPath: join(diatremeDefaultConfig.rootPath, 'src'),
+  debug: false,
+  outputTypesDirPath: join(process.cwd(), '.types'),
+  sourceDirPath: join(process.cwd(), 'src'),
+  productionDir: '.mahameru',
+  developmentDir: '.mahameru',
 };
 
 export type MahameruEvents = {
   ready: [mode: 'development' | 'production', data: { port?: number; host?: string }];
 };
 
-export class Mahameru extends EventEmitter<MahameruEvents> {
+export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
   protected readonly diatreme: Diatreme;
-  protected _options: MahameruOptions;
   protected spinner?: Ora;
-  protected logger: Logger;
 
   constructor(options?: Partial<MahameruOptions>, spinner?: Ora) {
-    super();
-    this._options = { ...mahameruDefaultOptions, ...options };
-    this.logger = createLogger('Mahameru', this._options.debug);
-    this.spinner = this._options.debug ? undefined : spinner;
-    this.diatreme = new Diatreme(this._options);
-  }
-
-  get options(): MahameruOptions {
-    return this._options;
+    super('Mahameru', { ...mahameruDefaultOptions, ...options });
+    this.spinner = this.options.debug ? undefined : spinner;
+    this.diatreme = new Diatreme({
+      debug: this.options.debug,
+      dev: this.options.dev,
+    });
   }
 
   public async start() {
     this.loadEnvironmentVariables();
 
-    if (this._options.dev) {
+    if (this.options.dev) {
       await this.startDevServer();
     } else {
       await this.startProdServer();
@@ -172,7 +165,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
           env: {
             MAHAMERU__ROOT_PATH: this.options.rootPath,
             MAHAMERU__ENV: 'development',
-            MAHAMERU__DEBUG: this._options.debug ? 'true' : 'false',
+            MAHAMERU__DEBUG: this.options.debug ? 'true' : 'false',
           },
         });
 
@@ -327,8 +320,8 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
   public generator() {
     const generatorOptions: MahameruGeneratorOptions = {
       dev: true,
-      rootPath: this._options.rootPath,
-      outputTypesDirPath: this._options.outputTypesDirPath,
+      rootPath: this.options.rootPath,
+      outputTypesDirPath: this.options.outputTypesDirPath,
     };
 
     const generator = Mahameru.generator(generatorOptions, this.logger);
@@ -492,7 +485,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
   protected async discoverPlugins() {
     try {
       this.logger.debug('Discovering plugins...');
-      const consumerPackagejsonPath = join(this._options.rootPath, 'package.json');
+      const consumerPackagejsonPath = join(this.options.rootPath, 'package.json');
       this.logger.debug(`Loading ${consumerPackagejsonPath}...`);
       const consumerPackagejson = JSON.parse(await readFile(consumerPackagejsonPath, 'utf-8'));
       const allDependencies = {
@@ -519,13 +512,7 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
           if (pluginPkg?.mahameru?.type !== 'plugin') continue;
 
           const module = await this.require<
-            Record<
-              'default',
-              new (
-                options?: BasePluginOptions,
-                createLogger?: (name: string | string[], debug?: boolean) => Logger,
-              ) => Plugin
-            >
+            Record<'default', new (options: BasePluginOptions) => Plugin>
           >(join(pluginDirPath, 'index.js'));
 
           if (!module) {
@@ -538,19 +525,13 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
             this.logger.debug(`Failed to load plugin: ${name}. No default export found`);
 
           const Plugin = module.default;
-          const pluginInstance = new Plugin(
-            { debug: this._options.debug, dev: this._options.dev },
-            createLogger,
-          );
+          const pluginInstance = new Plugin({ debug: this.options.debug, dev: this.options.dev });
           const shortPluginName = name.replace('@mahameru/', '');
 
           if (pluginInstance.generator) {
-            const pluginOutputTypesDirPath = join(
-              this._options.outputTypesDirPath,
-              shortPluginName,
-            );
+            const pluginOutputTypesDirPath = join(this.options.outputTypesDirPath, shortPluginName);
             pluginInstance.generator.outputTypesDirPath = pluginOutputTypesDirPath;
-            pluginInstance.generator.sourceDirPath = this._options.sourceDirPath;
+            pluginInstance.generator.sourceDirPath = this.options.sourceDirPath;
             await pluginInstance.generator.generate();
             await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
           }
@@ -572,10 +553,10 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
   }
 
   protected loadEnvironmentVariables() {
-    const dev = this._options.dev;
-    const defaultEnvFilePath = join(this._options.rootPath, '.env');
-    const envFilePath = join(this._options.rootPath, `.env.${dev ? 'development' : 'production'}`);
-    const envLocalFilePath = join(this._options.rootPath, '.env.local');
+    const dev = this.options.dev;
+    const defaultEnvFilePath = join(this.options.rootPath, '.env');
+    const envFilePath = join(this.options.rootPath, `.env.${dev ? 'development' : 'production'}`);
+    const envLocalFilePath = join(this.options.rootPath, '.env.local');
 
     const filesToLoad = [defaultEnvFilePath, envFilePath, envLocalFilePath];
 
@@ -632,38 +613,5 @@ export class Mahameru extends EventEmitter<MahameruEvents> {
       ...globalThis.mahameruEnv,
       ...envForMahameru,
     };
-  }
-
-  protected async require<T extends Record<string, unknown> = Record<string, unknown>>(
-    resolvedFilePath: string,
-  ): Promise<T | undefined> {
-    const noCache = this.options.dev;
-
-    if (!existsSync(resolvedFilePath)) return undefined;
-
-    if (noCache) {
-      const globalObj = globalThis as unknown as { require?: CustomNodeRequire };
-      const globalRequire =
-        typeof require !== 'undefined'
-          ? (require as unknown as CustomNodeRequire)
-          : globalObj.require;
-
-      if (globalRequire?.cache) {
-        try {
-          const resolved = globalRequire.resolve(resolvedFilePath);
-          delete globalRequire.cache[resolved];
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    let fileUrl = pathToFileURL(resolvedFilePath).href;
-
-    if (noCache) {
-      fileUrl += `?update=${Date.now()}`;
-    }
-
-    return (await import(fileUrl)) as T & { default?: T };
   }
 }

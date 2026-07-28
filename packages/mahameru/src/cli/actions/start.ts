@@ -1,5 +1,5 @@
 import Diatreme from '@mahameru/diatreme';
-import { createLogger } from '../../logger.js';
+import { createLogger } from '@mahameru/tephra';
 import type { MahameruIPCMessageChild } from '../../types/index.js';
 import { printServerReady } from '../../utils/printServerReady.js';
 import { isPortAvailable } from '../../utils/free-port-finder.js';
@@ -30,8 +30,8 @@ export default function start({ rootPath, version }: { rootPath: string; version
       if (!(await isPortAvailable(port))) throw new MahameruError(`Port ${port} is already in use`);
 
       const app = new Diatreme({
-        rootPath,
         dev: false,
+        debug: false,
       });
 
       app.on('ready', ({ port, host, mode }) => {

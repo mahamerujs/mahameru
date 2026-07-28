@@ -1,20 +1,20 @@
+import { BaseClass } from '@mahameru/tephra';
 import type { Plugin } from './index.js';
-import type { Logger } from './logger.js';
 
 export interface BaseGeneratorOptions {
-  debug?: boolean;
-  dev?: boolean;
+  debug: boolean;
+  dev: boolean;
 }
 
-export abstract class Generator<O extends BaseGeneratorOptions = BaseGeneratorOptions> {
-  protected logger!: Logger;
-  protected _options: O;
+export abstract class Generator<
+  O extends BaseGeneratorOptions = BaseGeneratorOptions,
+> extends BaseClass<O> {
   protected _sourceDirPath!: string;
   protected _outputTypesDirPath!: string;
   protected _plugins: Map<string, Plugin> = new Map();
 
-  constructor(options: Partial<O>) {
-    this._options = options as O;
+  constructor(name: string, options: O) {
+    super(name, options);
   }
 
   set sourceDirPath(sourceDirPath: string) {
@@ -41,6 +41,10 @@ export abstract class Generator<O extends BaseGeneratorOptions = BaseGeneratorOp
     if (!this._onDevHRM) return;
 
     await this._onDevHRM(changedFile);
+  }
+
+  protected getPlugin(name: string): Plugin | undefined {
+    return this._plugins.get(name);
   }
 
   protected _onDevHRM?(filePath: string): Promise<boolean>;

@@ -190,6 +190,9 @@ importers:
       '@mahameru/plugin':
         specifier: workspace:*
         version: link:../plugin/dist
+      '@mahameru/tephra':
+        specifier: workspace:*
+        version: link:../tephra/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -251,6 +254,9 @@ importers:
       '@mahameru/plugin':
         specifier: workspace:*
         version: link:../plugin/dist
+      '@mahameru/tephra':
+        specifier: workspace:*
+        version: link:../tephra/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -267,6 +273,9 @@ importers:
 
   packages/plugin:
     devDependencies:
+      '@mahameru/tephra':
+        specifier: workspace:*
+        version: link:../tephra/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig

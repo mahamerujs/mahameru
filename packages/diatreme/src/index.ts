@@ -1,8 +1,4 @@
-import { join } from 'node:path';
-
-import { EventEmitter } from './event-emitter.js';
-import { createLogger, type Logger } from './logger.js';
-
+import { EventBaseClass } from '@mahameru/tephra';
 import type { Plugin } from '@mahameru/plugin';
 
 export type DiatremeEvents = {
@@ -12,55 +8,21 @@ export type DiatremeEvents = {
 export type DiatremeOptions = {
   dev: boolean;
   debug: boolean;
-  rootPath: string;
-  appPath: string;
-  productionDir: string;
-  developmentDir: string;
-  initiatorFilePath?: string;
 };
 
-export const diatremeDefaultConfig: DiatremeOptions = {
+const diatremeDefaultConfig: DiatremeOptions = {
   dev: false,
   debug: false,
-  rootPath: process.cwd(),
-  get appPath(): string {
-    return join(this.rootPath, this.dev ? this.developmentDir : this.productionDir);
-  },
-  productionDir: '.mahameru',
-  developmentDir: '.mahameru',
 };
 
 /**
  * Main Diatreme class that orchestrates the application lifecycle.
  */
-export class Diatreme extends EventEmitter<DiatremeEvents> {
-  protected _initialized = false;
-  protected _isShuttingDown = false;
+export class Diatreme extends EventBaseClass<DiatremeEvents, DiatremeOptions> {
   protected _plugins = new Map<string, Plugin>();
-  protected logger: Logger;
-  public readonly options: DiatremeOptions;
 
   constructor(options?: Partial<DiatremeOptions>) {
-    super();
-
-    this.options = { ...diatremeDefaultConfig, ...options };
-    this.logger = createLogger('Diatreme', this.options.debug);
-  }
-
-  /**
-   * Indicates whether the Mahameru server has been initialized or not.
-   * @returns {boolean}
-   */
-  get initialized() {
-    return this._initialized;
-  }
-
-  /**
-   * Indicates whether the Mahameru server is shutting down or not.
-   * @returns {boolean}
-   */
-  get isShuttingDown() {
-    return this._isShuttingDown;
+    super('Diatreme', { ...diatremeDefaultConfig, ...options });
   }
 
   get plugins(): Record<string, Plugin> {
@@ -119,5 +81,4 @@ export class Diatreme extends EventEmitter<DiatremeEvents> {
   }
 }
 
-export * from './event-emitter.js';
 export default Diatreme;
