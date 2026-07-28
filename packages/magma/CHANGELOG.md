@@ -1,5 +1,11 @@
 # @mahameru/magma
 
+## 0.0.15
+
+### Patch Changes
+
+- Fix wrong import on @mahameru/magma route
+
 ## 0.0.14
 
 ### Patch Changes
