@@ -554,12 +554,15 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
             continue;
           }
 
-          const module = await this.require<
-            Record<'default', new (options: BasePluginOptions) => Plugin>
-          >(join(pluginDirPath, 'index.js'));
+          const module =
+            await this.require<Record<'default', new (options: BasePluginOptions) => Plugin>>(
+              pluginEntryFilePath,
+            );
 
           if (!module) {
-            this.logger.warn(`Failed to load plugin: ${pluginPkg.name}. Plugin not found`);
+            this.logger.warn(
+              `Failed to load plugin: ${pluginPkg.name}. Plugin not found ${pluginEntryFilePath}`,
+            );
 
             continue;
           }
