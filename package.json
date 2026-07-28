@@ -2,7 +2,7 @@
   "name": "mahamerujs",
   "private": true,
   "scripts": {
-    "prepare": "turbo run build --filter=@mahameru/cli... --filter=create-mahameru... --filter=@mahameru/diatreme... --filter=@mahameru/magma... --filter=mahameru... --filter=@mahameru/plugin...",
+    "prepare": "turbo run build --filter=@mahameru/cli... --filter=create-mahameru... --filter=@mahameru/diatreme... --filter=@mahameru/magma... --filter=mahameru... --filter=@mahameru/plugin... --filter=@mahameru/tephra...",
     "dev": "turbo watch dev --filter=blank-test...",
     "dev:blank": "turbo watch dev --filter=blank-test...",
     "dev:http": "turbo watch dev --filter=http-test...",
@@ -13,6 +13,7 @@
     "build:magma": "turbo run build --filter=@mahameru/magma...",
     "build:mahameru": "turbo run build --filter=mahameru...",
     "build:plugin": "turbo run build --filter=@mahameru/plugin...",
+    "build:tephra": "turbo run build --filter=@mahameru/tephra...",
     "clean": "rimraf --glob .turbo \"packages/*/dist\" \"packages/*/.turbo\" \"packages/*/.tsbuildinfo.json\" \"packages/*/dist.tgz\" \"tests/*/.turbo\" \"tests/*/.mahameru\" \"tests/*/.types\" \"tests/*/mahameru.d.ts\" node_modules/.cache",
     "clean:all": "pnpm clean && rimraf --glob \"packages/*/node_modules\" \"tests/*/node_modules\"",
     "lint": "turbo run lint",

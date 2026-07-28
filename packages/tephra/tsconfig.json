@@ -1,0 +1,10 @@
+{
+  "extends": "@mahameru/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "declarationDir": "./dist",
+    "tsBuildInfoFile": "./.tsbuildinfo.json"
+  },
+  "include": ["./src/**/*"]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "@mahameru/tephra",
+  "version": "0.0.0",
+  "description": "Shared utilities, helpers, and common primitives across the MahameruJS framework ecosystem.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "build": "rimraf dist .tsbuildinfo.json && tsup",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "node",
+    "mahameru",
+    "mahamerujs",
+    "utils",
+    "helpers",
+    "tephra",
+    "shared"
+  ],
+  "author": "Bintan <hello@bintvn.co>",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "devDependencies": {
+    "@mahameru/tsconfig": "workspace:*",
+    "@types/node": "^26.1.0",
+    "type-fest": "^5.8.0"
+  }
+}
