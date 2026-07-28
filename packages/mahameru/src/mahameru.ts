@@ -533,15 +533,30 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
         try {
           const pluginDirPath = join(this.options.rootPath, 'node_modules', pluginPkg.name);
           const pluginEntryFilePathCandidates = [];
+          const isCommonJs = typeof globalThis.module !== 'undefined';
 
-          if (pluginPkg.main) {
-            if (pluginPkg.main.startsWith('./')) pluginPkg.main = pluginPkg.main.replace('./', '');
+          if (!isCommonJs) {
+            if (pluginPkg.module) {
+              if (pluginPkg.module.startsWith('./'))
+                pluginPkg.module = pluginPkg.module.replace('./', '');
 
-            pluginEntryFilePathCandidates.push(join(pluginDirPath, pluginPkg.main));
+              pluginEntryFilePathCandidates.push(join(pluginDirPath, pluginPkg.module));
+            } else {
+              pluginEntryFilePathCandidates.push(
+                ...[join(pluginDirPath, 'index.js'), join(pluginDirPath, 'dist', 'index.js')],
+              );
+            }
           } else {
-            pluginEntryFilePathCandidates.push(
-              ...[join(pluginDirPath, 'index.js'), join(pluginDirPath, 'dist', 'index.js')],
-            );
+            if (pluginPkg.main) {
+              if (pluginPkg.main.startsWith('./'))
+                pluginPkg.main = pluginPkg.main.replace('./', '');
+
+              pluginEntryFilePathCandidates.push(join(pluginDirPath, pluginPkg.main));
+            } else {
+              pluginEntryFilePathCandidates.push(
+                ...[join(pluginDirPath, 'index.js'), join(pluginDirPath, 'dist', 'index.js')],
+              );
+            }
           }
 
           const pluginEntryFilePath = pluginEntryFilePathCandidates.find((path) =>
