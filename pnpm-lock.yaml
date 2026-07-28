@@ -186,13 +186,14 @@ importers:
     publishDirectory: dist
 
   packages/diatreme:
-    devDependencies:
+    dependencies:
       '@mahameru/plugin':
         specifier: workspace:*
         version: link:../plugin/dist
       '@mahameru/tephra':
         specifier: workspace:*
         version: link:../tephra/dist
+    devDependencies:
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -229,6 +230,15 @@ importers:
 
   packages/mahameru:
     dependencies:
+      '@mahameru/diatreme':
+        specifier: workspace:*
+        version: link:../diatreme/dist
+      '@mahameru/plugin':
+        specifier: workspace:*
+        version: link:../plugin/dist
+      '@mahameru/tephra':
+        specifier: workspace:*
+        version: link:../tephra/dist
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -248,15 +258,6 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
     devDependencies:
-      '@mahameru/diatreme':
-        specifier: workspace:*
-        version: link:../diatreme/dist
-      '@mahameru/plugin':
-        specifier: workspace:*
-        version: link:../plugin/dist
-      '@mahameru/tephra':
-        specifier: workspace:*
-        version: link:../tephra/dist
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -272,10 +273,11 @@ importers:
     publishDirectory: dist
 
   packages/plugin:
-    devDependencies:
+    dependencies:
       '@mahameru/tephra':
         specifier: workspace:*
         version: link:../tephra/dist
+    devDependencies:
       '@mahameru/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
