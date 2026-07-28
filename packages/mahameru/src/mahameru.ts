@@ -532,6 +532,27 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
       for (const pluginPkg of pluginPackagesJson) {
         try {
           const pluginDirPath = join(this.options.rootPath, 'node_modules', pluginPkg.name);
+          const pluginEntryFilePathCandidates = [];
+
+          if (pluginPkg.main) {
+            if (pluginPkg.main.startsWith('./')) pluginPkg.main = pluginPkg.main.replace('./', '');
+
+            pluginEntryFilePathCandidates.push(join(pluginDirPath, pluginPkg.main));
+          } else {
+            pluginEntryFilePathCandidates.push(
+              ...[join(pluginDirPath, 'index.js'), join(pluginDirPath, 'dist', 'index.js')],
+            );
+          }
+
+          const pluginEntryFilePath = pluginEntryFilePathCandidates.find((path) =>
+            existsSync(path),
+          );
+
+          if (!pluginEntryFilePath) {
+            this.logger.warn(`Failed to load plugin: ${pluginPkg.name}. Entry file not found`);
+
+            continue;
+          }
 
           const module = await this.require<
             Record<'default', new (options: BasePluginOptions) => Plugin>
