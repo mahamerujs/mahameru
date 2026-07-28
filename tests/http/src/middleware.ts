@@ -13,6 +13,8 @@ const middleware: MagmaMiddleware = async ({ isProtectedRoute }, next) => {
 
     return await next();
   } catch (error) {
+    console.error('middleware', error);
+
     return MagmaResponse.json(
       { success: false, message: 'Internal Server Error' },
       { status: 500 },

@@ -1,9 +1,0 @@
-import type { RouteHandler } from '@mahameru/magma';
-
-export const GET: RouteHandler = ({ container }) => {
-  return container.modules.project.controller.getAllProject();
-};
-
-export const POST: RouteHandler = async ({ request, container }) => {
-  return container.modules.project.controller.createProject(request);
-};
