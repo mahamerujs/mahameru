@@ -1,8 +1,9 @@
-import { Container } from './container.js';
-import { Generator } from './generator.js';
 import { BaseClass } from '@mahameru/tephra';
+import type { Container } from './container.js';
+import type { Generator } from './generator.js';
 
-export { Generator, Container };
+export * from './container.js';
+export * from './generator.js';
 
 export interface BasePluginOptions {
   debug: boolean;

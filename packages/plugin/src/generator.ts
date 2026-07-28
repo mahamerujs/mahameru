@@ -1,10 +1,10 @@
 import { BaseClass } from '@mahameru/tephra';
 import type { Plugin } from './index.js';
 
-export interface BaseGeneratorOptions {
+export type BaseGeneratorOptions = {
   debug: boolean;
   dev: boolean;
-}
+};
 
 export abstract class Generator<
   O extends BaseGeneratorOptions = BaseGeneratorOptions,
