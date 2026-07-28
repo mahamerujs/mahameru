@@ -9,6 +9,7 @@ import type { Ora } from 'ora';
 import type { TypescriptServerParentToChildMessage } from './workers/typescript-server.ts';
 import { type Logger } from '@mahameru/tephra';
 import { EventBaseClass } from '@mahameru/tephra';
+import type { PackageJson } from 'type-fest';
 
 export type MahameruMode = 'development' | 'production';
 export type MahameruOptions = {
@@ -25,6 +26,13 @@ type MahameruGeneratorOptions = {
   dev: boolean;
   rootPath: string;
   outputTypesDirPath: string;
+};
+
+type PluginPackageJson = PackageJson & {
+  name: string;
+  description: string;
+  version: string;
+  mahameru: { name: string; type: string };
 };
 
 declare global {
@@ -487,60 +495,76 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
       this.logger.debug('Discovering plugins...');
       const consumerPackagejsonPath = join(this.options.rootPath, 'package.json');
       this.logger.debug(`Loading ${consumerPackagejsonPath}...`);
-      const consumerPackagejson = JSON.parse(await readFile(consumerPackagejsonPath, 'utf-8'));
+      const consumerPackagejson = JSON.parse(
+        await readFile(consumerPackagejsonPath, 'utf-8'),
+      ) as PackageJson;
       const allDependencies = {
         ...consumerPackagejson.dependencies,
         ...consumerPackagejson.devDependencies,
       };
 
-      const potentialPluginNames = Object.keys(allDependencies).filter(
-        (dep) => dep.startsWith('@mahameru/') && dep !== '@mahameru/diatreme',
-      );
+      const pluginPackagesJson: Array<PluginPackageJson> = [];
+
+      for (const [key] of Object.entries(allDependencies)) {
+        const pluginDirPath = join(this.options.rootPath, 'node_modules', key);
+        const pluginPkg = JSON.parse(
+          await readFile(join(pluginDirPath, 'package.json'), 'utf-8'),
+        ) as PluginPackageJson;
+
+        if (
+          typeof pluginPkg.name === 'string' &&
+          typeof pluginPkg.description === 'string' &&
+          typeof pluginPkg.version === 'string' &&
+          typeof pluginPkg.mahameru !== 'undefined' &&
+          typeof pluginPkg.mahameru.name !== 'undefined' &&
+          typeof pluginPkg.mahameru.type !== 'undefined' &&
+          pluginPkg.mahameru.type === 'plugin'
+        ) {
+          pluginPackagesJson.push({ ...pluginPkg });
+        }
+      }
 
       this.logger.debug(
-        `Found ${potentialPluginNames.length > 1 ? `${potentialPluginNames.length} plugins` : '1 plugin'}:`,
-        potentialPluginNames.join(', '),
+        `Found ${pluginPackagesJson.length > 1 ? `${pluginPackagesJson.length} plugins` : '1 plugin'}:`,
+        pluginPackagesJson.map((packageJson) => packageJson.name).join(', '),
       );
 
-      for (const name of potentialPluginNames) {
+      for (const pluginPkg of pluginPackagesJson) {
         try {
-          const pluginDirPath = join(this.options.rootPath, 'node_modules', name);
-          const pluginPkg = JSON.parse(
-            await readFile(join(pluginDirPath, 'package.json'), 'utf-8'),
-          );
-
-          if (pluginPkg?.mahameru?.type !== 'plugin') continue;
+          const pluginDirPath = join(this.options.rootPath, 'node_modules', pluginPkg.name);
 
           const module = await this.require<
             Record<'default', new (options: BasePluginOptions) => Plugin>
           >(join(pluginDirPath, 'index.js'));
 
           if (!module) {
-            this.logger.warn(`Failed to load plugin: ${name}. Plugin not found`);
+            this.logger.warn(`Failed to load plugin: ${pluginPkg.name}. Plugin not found`);
 
             continue;
           }
 
           if (!module.default)
-            this.logger.debug(`Failed to load plugin: ${name}. No default export found`);
+            this.logger.debug(`Failed to load plugin: ${pluginPkg.name}. No default export found`);
 
           const Plugin = module.default;
           const pluginInstance = new Plugin({ debug: this.options.debug, dev: this.options.dev });
-          const shortPluginName = name.replace('@mahameru/', '');
 
           if (pluginInstance.generator) {
-            const pluginOutputTypesDirPath = join(this.options.outputTypesDirPath, shortPluginName);
+            const pluginOutputTypesDirPath = join(
+              this.options.outputTypesDirPath,
+              pluginPkg.mahameru.name,
+            );
             pluginInstance.generator.outputTypesDirPath = pluginOutputTypesDirPath;
             pluginInstance.generator.sourceDirPath = this.options.sourceDirPath;
             await pluginInstance.generator.generate();
             await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
           }
 
-          this.diatreme.setPlugin(shortPluginName, pluginInstance);
+          this.diatreme.setPlugin(pluginPkg.mahameru.name, pluginInstance);
 
-          this.logger.debug(`Loaded plugin ${name} from ${pluginDirPath}`);
+          this.logger.debug(`Loaded plugin ${pluginPkg.name} from ${pluginDirPath}`);
         } catch (err) {
-          this.logger.error(`Failed to load plugin: ${name}`, err);
+          this.logger.error(`Failed to load plugin: ${pluginPkg.name}`, err);
         }
       }
 
