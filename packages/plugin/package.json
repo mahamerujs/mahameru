@@ -1,6 +1,6 @@
 {
   "name": "@mahameru/plugin",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A package for creating plugins for MahameruJS.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

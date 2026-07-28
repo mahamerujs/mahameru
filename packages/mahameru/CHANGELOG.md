@@ -1,5 +1,13 @@
 # mahameru
 
+## 0.0.46
+
+### Patch Changes
+
+- Bug fixes and improvements
+- Updated dependencies
+  - @mahameru/diatreme@0.0.11
+
 ## 0.0.45
 
 ### Patch Changes
