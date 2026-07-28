@@ -1,5 +1,11 @@
 # create-mahameru
 
+## 0.0.21
+
+### Patch Changes
+
+- Delete template README.md on user project
+
 ## 0.0.20
 
 ### Patch Changes
