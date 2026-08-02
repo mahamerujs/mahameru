@@ -1,5 +1,11 @@
 # mahameru
 
+## 0.0.55
+
+### Patch Changes
+
+- Improvement on development startup
+
 ## 0.0.54
 
 ### Patch Changes
