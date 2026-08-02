@@ -1,5 +1,12 @@
 # @mahameru/diatreme
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @mahameru/plugin@0.0.5
+
 ## 0.0.14
 
 ### Patch Changes

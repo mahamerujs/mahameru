@@ -1,5 +1,11 @@
 # @mahameru/plugin
 
+## 0.0.5
+
+### Patch Changes
+
+- Modify plugin container
+
 ## 0.0.4
 
 ### Patch Changes

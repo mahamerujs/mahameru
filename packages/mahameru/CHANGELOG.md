@@ -1,5 +1,14 @@
 # mahameru
 
+## 0.0.54
+
+### Patch Changes
+
+- Modify plugin container
+- Updated dependencies
+  - @mahameru/plugin@0.0.5
+  - @mahameru/diatreme@0.0.15
+
 ## 0.0.53
 
 ### Patch Changes
