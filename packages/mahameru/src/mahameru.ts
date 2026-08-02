@@ -1,6 +1,6 @@
 import { Diatreme } from '@mahameru/diatreme';
 import { Plugin, type BasePluginOptions } from '@mahameru/plugin';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -104,6 +104,14 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
 
     await this.generator().env();
     await this.discoverPlugins();
+    await this.runPluginGenerator();
+
+    this.logger.debug('Running development initial build...');
+    await this.typescriptServer.build();
+    this.logger.debug('Running development initial build... Done');
+
+    await this.runPluginContainerInitializers();
+
     await this.generator().mahameruDts();
     await this.generator().appendMahameruDTSToTsConfig();
     await this.typescriptServer.spawn();
@@ -292,7 +300,13 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
       });
     },
     build: async () => {
-      const workerFilePath = resolve(join(__dirname, 'workers', 'build.js'));
+      const workerFilePath = join(
+        this.options.rootPath,
+        'node_modules',
+        'mahameru',
+        'workers',
+        'build.js',
+      );
 
       return await new Promise<void>((resolve, reject) => {
         const worker = spawn(process.execPath, [workerFilePath], {
@@ -588,10 +602,6 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
           const Plugin = module.default;
           const pluginInstance = new Plugin({ debug: this.options.debug, dev: this.options.dev });
 
-          if (pluginInstance.container) {
-            await pluginInstance.container.initialize();
-          }
-
           if (pluginInstance.generator) {
             const pluginOutputTypesDirPath = join(
               this.options.outputTypesDirPath,
@@ -599,8 +609,6 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
             );
             pluginInstance.generator.outputTypesDirPath = pluginOutputTypesDirPath;
             pluginInstance.generator.sourceDirPath = this.options.sourceDirPath;
-            await pluginInstance.generator.generate();
-            await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
           }
 
           this.diatreme.setPlugin(pluginPkg.mahameru.name, pluginInstance);
@@ -617,6 +625,33 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
     }
 
     this.logger.debug('Discovering plugins... Done');
+  }
+
+  protected async runPluginGenerator() {
+    this.logger.debug('Running plugin generators...');
+
+    for (const [name, plugin] of Object.entries(this.diatreme.plugins)) {
+      if (plugin.generator) {
+        await plugin.generator.generate();
+        const pluginOutputTypesDirPath = join(this.options.outputTypesDirPath, name);
+
+        await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
+      }
+    }
+
+    this.logger.debug('Running plugin generators... Done');
+  }
+
+  protected async runPluginContainerInitializers() {
+    this.logger.debug('Running plugin container initializers...');
+
+    for (const plugin of Object.values(this.diatreme.plugins)) {
+      if (plugin.container) {
+        await plugin.container.initialize();
+      }
+    }
+
+    this.logger.debug('Running plugin container initializers... Done');
   }
 
   protected loadEnvironmentVariables() {
