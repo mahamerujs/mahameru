@@ -599,6 +599,10 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
             await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
           }
 
+          if (pluginInstance.container) {
+            await pluginInstance.container.scan();
+          }
+
           this.diatreme.setPlugin(pluginPkg.mahameru.name, pluginInstance);
 
           this.logger.debug(`Loaded plugin ${pluginPkg.name} from ${pluginDirPath}`);

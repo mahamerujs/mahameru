@@ -1,5 +1,5 @@
 import { createServer, IncomingMessage, Server, ServerResponse } from 'node:http';
-import { existsSync, globSync } from 'node:fs';
+import { existsSync, globSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, join, relative } from 'node:path';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -19,6 +19,7 @@ import type {
   MagmaNext,
   RequestParams,
 } from './types.js';
+import { Module } from './module.js';
 
 type DefaultHTTPResponse = ServerResponse<IncomingMessage> & {
   req: IncomingMessage;
@@ -32,6 +33,15 @@ interface MagmaResponseLike {
   status: number;
   headers?: Headers | Record<string, string>;
 }
+
+type MagmaBaseOptions = {
+  appDirPath: string;
+  modulesDirPath: string;
+  routesDirPath: string;
+  filePaths: Record<string, string>;
+};
+
+type MagmaExtendedOptions = MagmaBaseOptions & MagmaOptions;
 
 export type MagmaOptions = {
   /**
@@ -99,6 +109,17 @@ export type MagmaOptions = {
   trailingSlash: boolean;
 };
 
+const appDirPath = join(process.cwd(), '.mahameru');
+const magmaBaseOptions: MagmaBaseOptions = {
+  appDirPath,
+  modulesDirPath: join(appDirPath, 'modules'),
+  routesDirPath: join(appDirPath, 'routes'),
+  filePaths: {
+    middleware: join(appDirPath, 'middleware.js'),
+    error: join(appDirPath, 'error.js'),
+  },
+};
+
 const defaultMagmaOptions: MagmaOptions = {
   host: '127.0.0.1',
   port: 3000,
@@ -112,33 +133,43 @@ const defaultMagmaOptions: MagmaOptions = {
   trailingSlash: false,
 };
 
-export default class Magma extends Plugin<MagmaOptions> {
+export default class Magma extends Plugin<MagmaExtendedOptions> {
   public readonly slugName: string = 'magma';
   protected httpServer: HTTPServerInstance;
-  protected container: Container;
   protected route: Route;
   protected favicon?: Buffer<ArrayBuffer>;
   protected request: Map<number, number> = new Map();
+  protected _container: Container;
+  protected _generator: Generator;
+  protected module: Module;
 
   constructor(options?: Partial<MagmaOptions>) {
-    super('Magma', { ...defaultMagmaOptions, ...options });
+    super('Magma', { ...magmaBaseOptions, ...defaultMagmaOptions, ...options });
 
-    const appDirPath = join(process.cwd(), '.mahameru');
-    this.container = new Container({
+    this._container = new Container({
       debug: this.options.debug,
-      appDirPath,
+      appDirPath: magmaBaseOptions.appDirPath,
       dev: this.options.dev,
-      modulesDirPath: join(appDirPath, 'modules'),
-      routesDirPath: join(appDirPath, 'routes'),
+      modulesDirPath: magmaBaseOptions.modulesDirPath,
+      routesDirPath: magmaBaseOptions.routesDirPath,
+      filePaths: [...Object.values(magmaBaseOptions.filePaths)],
     });
+
     this.route = new Route(
       {
         dev: this.options.dev,
         debug: this.options.debug,
+        routesDirPath: this.options.routesDirPath,
       },
+      this._container,
+    );
+    this.module = new Module(
       {
-        container: this.container,
+        dev: this.options.dev,
+        debug: this.options.debug,
+        modulesDirPath: this.options.modulesDirPath,
       },
+      this._container,
     );
     this._generator = new MagmaGenerator({ debug: this.options.debug, dev: this.options.dev });
     this.loadFavicon();
@@ -158,12 +189,23 @@ export default class Magma extends Plugin<MagmaOptions> {
     });
   }
 
+  get container() {
+    return this._container;
+  }
+
+  get generator() {
+    return this._generator;
+  }
+
   protected async _onDevHRM(filePath: string): Promise<void> {
     await this.container.onDevHRM(filePath);
   }
 
   protected async boot() {
-    await this.container.discover();
+    // await this.container.discover();
+
+    this.route.loadRoutes();
+    this.module.initialize();
 
     return new Promise<void>((resolve) => {
       if (this._initialized) {
@@ -322,7 +364,14 @@ export default class Magma extends Plugin<MagmaOptions> {
 
       const { matchedRoute, matchResult, notFoundResponse } =
         await this.route.resolveRoute(magmaRequest);
-      const middlewareHandler = this.container.middlewareHandler;
+      // const middlewareHandler = this.magmaContainer.middlewareHandler;
+      const middlewareHandlerCandidates = this.container?.get<MagmaMiddleware>(
+        join(this.options.appDirPath, 'middleware.js'),
+      );
+
+      const middlewareHandler = middlewareHandlerCandidates
+        ? middlewareHandlerCandidates.find((item) => item.name === 'default')?.item
+        : undefined;
 
       if (!matchedRoute || !matchResult) {
         const routeHandler: MagmaNext = async () => notFoundResponse;
@@ -330,7 +379,7 @@ export default class Magma extends Plugin<MagmaOptions> {
           ? await middlewareHandler(
               {
                 request: magmaRequest,
-                container: this.container.magmaContainer,
+                container: { modules: this.module.modules },
                 method,
                 params: {},
                 path: rawReqUrl,
@@ -365,7 +414,7 @@ export default class Magma extends Plugin<MagmaOptions> {
         });
 
       const context: MagmaContext = {
-        container: this.container.magmaContainer,
+        container: { modules: this.module.modules },
         request: magmaRequest,
         params,
         path: rawReqUrl,
@@ -380,11 +429,15 @@ export default class Magma extends Plugin<MagmaOptions> {
 
       return this.sendResponse(response, magmaResponse);
     } catch (error: unknown) {
+      if (this.options.debug && !(error instanceof MagmaResponse)) {
+        this.logger.error(error);
+      }
+
       if (error instanceof MagmaResponse) return this.sendResponse(response, error);
 
       const context: MagmaContext = {
         request: magmaRequest,
-        container: this.container.magmaContainer,
+        container: { modules: this.module.modules },
         path: rawReqUrl,
         method,
         params: {},
@@ -397,7 +450,7 @@ export default class Magma extends Plugin<MagmaOptions> {
     }
   }
 
-  protected async loadFavicon() {
+  protected loadFavicon() {
     let targetFaviconPath: string | undefined = undefined;
     const defaultFaviconPath = join(
       process.cwd(),
@@ -415,7 +468,7 @@ export default class Magma extends Plugin<MagmaOptions> {
 
     if (!targetFaviconPath) return;
 
-    this.favicon = await readFile(targetFaviconPath);
+    this.favicon = readFileSync(targetFaviconPath);
   }
 
   protected async handleFaviconRequest(request: MagmaRequest, response: DefaultHTTPResponse) {
@@ -426,10 +479,19 @@ export default class Magma extends Plugin<MagmaOptions> {
       );
     }
 
-    const middlewareHandler = this.container.middlewareHandler;
+    // const middlewareHandler = this.magmaContainer.middlewareHandler;
+
+    const middlewareHandlerCandidates = this.container?.get<MagmaMiddleware>(
+      join(this.options.appDirPath, 'middleware.js'),
+    );
+
+    const middlewareHandler = middlewareHandlerCandidates
+      ? middlewareHandlerCandidates.find((item) => item.name === 'default')?.item
+      : undefined;
+
     const context: MagmaContext = {
       request,
-      container: this.container.magmaContainer,
+      container: { modules: this.module.modules },
       method: request.method,
       params: {},
       path: request.path,

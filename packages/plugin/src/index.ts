@@ -28,6 +28,10 @@ export abstract class Plugin<O extends BasePluginOptions = BasePluginOptions> ex
     return this._generator;
   }
 
+  get container() {
+    return this._container;
+  }
+
   public setPlugins(plugins: Map<string, Plugin>) {
     this._plugins = plugins;
   }

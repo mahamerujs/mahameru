@@ -1,4 +1,4 @@
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
@@ -13,9 +13,9 @@ import type {
   MagmaMiddleware,
   ProtectedRoute,
   RouteHandler,
-  RouteItem,
 } from './types.js';
 import { Container as PluginContainer } from '@mahameru/plugin';
+import { HTTP_METHOD } from './constants.js';
 
 /**
  * Container options
@@ -26,10 +26,10 @@ export type ContainerOptions = {
   routesDirPath: string;
   modulesDirPath: string;
   appDirPath: string;
+  filePaths: string[];
 };
 
 export class Container extends PluginContainer<ContainerOptions> {
-  protected _initialized = false;
   protected _registry: ContainerRegistry = new Map();
 
   constructor(public readonly options: ContainerOptions) {
@@ -42,10 +42,25 @@ export class Container extends PluginContainer<ContainerOptions> {
     return found?.item || {};
   }
 
-  get routeItems(): RouteItem[] {
-    return Array.from(this._registry.values())
-      .filter((item) => item.type === 'route')
-      .map((item) => item.item);
+  get routeItems() {
+    return Object.keys(this.items)
+      .filter((fullPath) => fullPath.startsWith(this.options.routesDirPath))
+      .map((fullPath) => {
+        const items = this.items.get(fullPath)!;
+
+        return {
+          fullPath,
+          handlers: items
+            .filter(
+              (item) =>
+                HTTP_METHOD.includes(item.name as HTTPMethod) && typeof item.item === 'function',
+            )
+            .map((item) => ({
+              method: item.name as HTTPMethod,
+              handler: item.item as RouteHandler,
+            })),
+        };
+      });
   }
 
   get middlewareHandler(): MagmaMiddleware | undefined {
@@ -61,10 +76,6 @@ export class Container extends PluginContainer<ContainerOptions> {
       Array.from(this._registry.values()).find((item) => item.type === 'protected-route')?.item ||
       []
     );
-  }
-
-  get initialized() {
-    return this._initialized;
   }
 
   get magmaContainer(): MagmaContainer {
@@ -118,7 +129,6 @@ export class Container extends PluginContainer<ContainerOptions> {
   }
 
   async discover() {
-    await this.loadRoutes();
     await this.loadModules();
     await this.loadMiddlewareHandler();
     await this.loadNotFoundHandlers();
@@ -127,40 +137,26 @@ export class Container extends PluginContainer<ContainerOptions> {
     this._initialized = true;
   }
 
-  public async onDevHRM(filePath: string) {
+  protected async _onDevHRM(filePath: string) {
     filePath = filePath.endsWith('.ts') ? filePath.replace('.ts', '.js') : filePath;
 
     if (filePath.includes('\\src\\')) filePath = filePath.replace('\\src\\', `\\.mahameru\\`);
 
-    const found = Array.from(this._registry.values()).find(
-      (containerItem) => containerItem.path === filePath,
-    );
-
     this.logger.debug('onDevHRM', filePath);
-
-    if (found) {
-      if (found.type === 'route') {
-        if (!this.options.routesDirPath) return false;
-
-        await this.loadSingleRoute(
-          filePath,
-          dirname(filePath),
-          this.options.routesDirPath,
-          dirname(filePath),
-        );
-      } else if (found.type === 'middleware' || found.type === 'protected-route') {
-        await this.loadMiddlewareHandler();
-      } else if (found.type === 'module-service') {
-        await this.loadModuleItem(filePath, 'module-service');
-      } else if (found.type === 'module-controller') {
-        await this.loadModuleItem(filePath, 'module-controller');
-      }
-    }
 
     return false;
   }
 
-  protected async loadRoutes(currentDir?: string) {
+  protected async parseFilePaths(): Promise<string[]> {
+    this.filePaths = [...this.options.filePaths];
+
+    await this.scanRouteFiles();
+    await this.scanModuleFiles();
+
+    return this.filePaths;
+  }
+
+  protected async scanRouteFiles(currentDir?: string) {
     const baseDir = this.options.routesDirPath;
 
     if (!currentDir) currentDir = baseDir;
@@ -175,63 +171,44 @@ export class Container extends PluginContainer<ContainerOptions> {
       const fullPath = join(currentDir, item.name);
 
       if (item.isDirectory()) {
-        await this.loadRoutes(fullPath);
+        await this.scanRouteFiles(fullPath);
 
         continue;
       }
 
-      if (!item.isFile() || item.name !== 'route.js') continue;
-
-      await this.loadSingleRoute(fullPath, currentDir, baseDir, item.parentPath);
+      if (item.isFile() && item.name === 'route.js') {
+        this.filePaths.push(fullPath);
+      }
     }
   }
 
-  protected async loadSingleRoute(
-    fullPath: string,
-    currentDir: string,
-    baseDir: string,
-    parentPath: string,
-  ): Promise<boolean> {
-    const relativePath = relative(baseDir, currentDir);
+  protected async scanModuleFiles() {
+    if (!this.options.modulesDirPath) return;
 
-    let path = '/' + relativePath.replace(/\\/g, '/');
-    path = path.replace(/\/+/g, '/');
+    const items = await readdir(this.options.modulesDirPath, { withFileTypes: true }).catch(
+      (error) => {
+        if (error.code === 'ENOENT') return [];
 
-    if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+        throw error;
+      },
+    );
 
-    const paramNames: RouteItem['paramNames'] = [];
-    const paramMatches = path.match(/\[([^\]]+)\]/g);
+    for (const item of items) {
+      if (!item.isDirectory()) continue;
 
-    if (paramMatches)
-      paramMatches.forEach((match) => {
-        paramNames.push(match.slice(1, -1));
-      });
+      const directory = item;
+      const controllerPath = join(this.options.modulesDirPath, directory.name, `controller.js`);
 
-    const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regexPattern = escaped.replace(/\\\[([^\\\]]+)\\\]/g, '([^/]+)');
-    const regex = new RegExp(`^${regexPattern}$`);
-    const pathFS = resolve(fullPath);
-    const routeHandlers = await this.require<Record<HTTPMethod, RouteHandler>>(fullPath);
+      if (existsSync(controllerPath)) {
+        this.filePaths.push(controllerPath);
+      }
 
-    if (routeHandlers) {
-      this._registry.set(fullPath, {
-        name: dirname(parentPath),
-        path: fullPath,
-        type: 'route',
-        isPublic: false,
-        item: {
-          paramNames: [...paramNames],
-          path,
-          pathFS,
-          regex,
-          routeHandlers,
-        },
-      });
+      const servicePath = join(this.options.modulesDirPath, directory.name, `service.js`);
 
-      return true;
+      if (existsSync(servicePath)) {
+        this.filePaths.push(servicePath);
+      }
     }
-
-    return false;
   }
 
   protected async loadModules() {
