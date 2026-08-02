@@ -588,6 +588,10 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
           const Plugin = module.default;
           const pluginInstance = new Plugin({ debug: this.options.debug, dev: this.options.dev });
 
+          if (pluginInstance.container) {
+            await pluginInstance.container.scan();
+          }
+
           if (pluginInstance.generator) {
             const pluginOutputTypesDirPath = join(
               this.options.outputTypesDirPath,
@@ -597,10 +601,6 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
             pluginInstance.generator.sourceDirPath = this.options.sourceDirPath;
             await pluginInstance.generator.generate();
             await this.generator().barrelIndexFile(pluginOutputTypesDirPath);
-          }
-
-          if (pluginInstance.container) {
-            await pluginInstance.container.scan();
           }
 
           this.diatreme.setPlugin(pluginPkg.mahameru.name, pluginInstance);
