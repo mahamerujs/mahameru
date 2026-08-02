@@ -1,5 +1,11 @@
 # mahameru
 
+## 0.0.53
+
+### Patch Changes
+
+- Reorder container and generator
+
 ## 0.0.52
 
 ### Patch Changes
