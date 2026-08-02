@@ -1,5 +1,14 @@
 # @mahameru/magma
 
+## 0.0.17
+
+### Patch Changes
+
+- Reconstruct plugin and magma
+- Updated dependencies
+  - @mahameru/plugin@0.0.4
+  - @mahameru/tephra@0.0.1
+
 ## 0.0.16
 
 ### Patch Changes

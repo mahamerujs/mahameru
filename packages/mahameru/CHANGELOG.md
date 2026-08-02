@@ -1,5 +1,15 @@
 # mahameru
 
+## 0.0.52
+
+### Patch Changes
+
+- Reconstruct plugin and magma
+- Updated dependencies
+  - @mahameru/diatreme@0.0.14
+  - @mahameru/plugin@0.0.4
+  - @mahameru/tephra@0.0.1
+
 ## 0.0.51
 
 ### Patch Changes
