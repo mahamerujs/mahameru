@@ -589,7 +589,7 @@ export class Mahameru extends EventBaseClass<MahameruEvents, MahameruOptions> {
           const pluginInstance = new Plugin({ debug: this.options.debug, dev: this.options.dev });
 
           if (pluginInstance.container) {
-            await pluginInstance.container.scan();
+            await pluginInstance.container.initialize();
           }
 
           if (pluginInstance.generator) {

@@ -31,19 +31,21 @@ export abstract class Container<
     return this.#items.get(filePath) as ContainerItem<T>[] | undefined;
   }
 
-  public async scan() {
-    this.logger.debug(`Scanning file paths...`);
+  public async initialize(): Promise<void> {
+    this.logger.debug(`Initializing...`);
 
     await this.parseFilePaths();
 
     await Promise.all(this.filePaths.map((filePath) => this.loadModule(filePath)));
 
-    this.logger.debug(`Scanning file paths... Done`);
-
     if (Array.from(this.#items.values()).length > 0) this.logger.debug('Found', this.#items);
-  }
 
-  public async initialize(): Promise<void> {}
+    await this._initialize?.();
+
+    this.logger.debug(`Initializing... Done`);
+
+    this._initialized = true;
+  }
 
   public async onDevHRM(changedFile: string): Promise<boolean> {
     await this.loadModule(changedFile);
@@ -70,4 +72,5 @@ export abstract class Container<
 
   protected abstract parseFilePaths(): Promise<string[]>;
   protected abstract _onDevHRM(filePath: string): Promise<boolean>;
+  protected _initialize?(): Promise<void>;
 }
