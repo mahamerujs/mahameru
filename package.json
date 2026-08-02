@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "prepare": "turbo run build --filter=@mahameru/cli... --filter=create-mahameru... --filter=@mahameru/diatreme... --filter=@mahameru/magma... --filter=mahameru... --filter=@mahameru/plugin... --filter=@mahameru/tephra...",
-    "dev": "turbo watch dev --filter=blank-test...",
+    "dev": "turbo watch dev",
     "dev:blank": "turbo watch dev --filter=blank-test...",
     "dev:http": "turbo watch dev --filter=http-test...",
     "build": "turbo run build",
